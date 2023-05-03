@@ -13,7 +13,7 @@ __DEBUG = False
 NUM_OF_QIDS_USED = 10
 GLOBAL_K = 0
 RESULT: List[Partition] = []
-ATTR_TREES: List[GenTree | NumRange] = []
+ATTR_TREES: list[NumRange | dict[str, GenTree]] = []
 IS_QID_CATEGORICAL: List[bool] = []
 QI_RANGE = []
 
@@ -134,75 +134,48 @@ def split_numerical_attribute(partition: Partition, qid_index: int) -> list[Part
     return sub_partitions
 
 
-# DATA_REQ
-#   - direct processing through "for record in partition.members"
-#       - see if the child nodes in the hierarchy cover all value AND if the all new partitions are greater than k
-#------------------------------------------------------------------------
-#   >> execute the queries with the refined attribute values
-#       - if for all new EC ec, refined along the current attribute, |ec| > k OR |EC| = 0: the attribute can be split
-#       - else the splitting along this attribute is not possble any more 
 def split_categorical_attribute(partition: Partition, qid_index: int) -> list[Partition]:
     """ Split categorical attribute using generalization hierarchy """
-
-    sub_partitions: List[Partition] = []
     
     node_to_split_at = ATTR_TREES[qid_index][partition.attr_gen_list[qid_index]]
-    child_nodes = node_to_split_at.children[:]    
+    child_nodes = node_to_split_at.children[:]
 
-    sub_groups = []
-    for i in range(len(child_nodes)):
-        sub_groups.append([])
-
-    # If the node (has no children, and thus) is a leaf, the partitioning is not possible >> []
-    if len(sub_groups) == 0:        
+    # If the node (has no children, and thus) is a leaf, the partitioning is not possible
+    if(len(child_nodes) == 0):
         return []
     
-    # DATA_REQ >> MAP_TO_QUERY
-    for record in partition.members:
-        qid_value = record[qid_index]
-        for i, node in enumerate(child_nodes):
-            try:
-                node.cover[qid_value]
-                # Store the records in the sub_groups array under the index that corresponds to the index of the child of the current node
-                sub_groups[i].append(record)
-                break
-            except KeyError:
-                continue
-        # If for one of the records of the partition we do not find a QID value from the child nodes of the current node, it cannot be generalized
-        # In this case, the try block never reaches the break, thus the for runs all the way to the end and the execution reaches this else branch
-        else:
-            print("Generalization hierarchy error!")
+    sub_partitions: List[Partition] = []
 
-    flag = True
-    for sub_group in sub_groups:
-        if len(sub_group) == 0:
+    for node in child_nodes:        
+        count_of_covered_by_node = ES_CONNECTOR.get_number_of_nodes_covered(partition, qid_index, node.covered_nodes.values())
+        
+        if count_of_covered_by_node == 0:
             continue
-        # If one child covers less than k elements, the split is invalid
-        if len(sub_group) < GLOBAL_K:
-            flag = False
-            break
 
-    if flag:
-        for i, sub_group in enumerate(sub_groups):
-            if len(sub_group) == 0:
-                continue
+        if count_of_covered_by_node < GLOBAL_K:
+            return []
+        
+        new_attr_width_list = partition.attr_width_list[:]            
+        new_attr_gen_list = partition.attr_gen_list[:]
 
-            new_attr_width_list = partition.attr_width_list[:]            
-            new_attr_gen_list = partition.attr_gen_list[:]
+        # For categorical attributes, the width of the attribute equals the number of children
+        new_attr_width_list[qid_index] = len(node)
+        # The generalized value of the attribute is the node value
+        new_attr_gen_list[qid_index] = node.value
 
-            # For categorical attributes, the width of the attribute equals the number of children
-            new_attr_width_list[qid_index] = len(child_nodes[i])
-            # The generalized value of the attribute is the node value
-            new_attr_gen_list[qid_index] = child_nodes[i].value
+        sub_partitions.append(Partition(count_of_covered_by_node, new_attr_width_list, new_attr_gen_list, NUM_OF_QIDS_USED))
 
-            sub_partitions.append(Partition(sub_group, new_attr_width_list, new_attr_gen_list, NUM_OF_QIDS_USED))
-
+    if sum(sub_p.count for sub_p in sub_partitions) != partition.count:
+        # TODO: add more details to the exception
+        raise Exception("Generalization hierarchy error!")        
+    
     return sub_partitions
 
 
 
 def split_partition(partition: Partition, qid_index: int):
-    """ Split partition and distribute records to different sub-partitions """    
+    """ Split partition and distribute records to different sub-partitions """
+
     if IS_QID_CATEGORICAL[qid_index] is False:
         return split_numerical_attribute(partition, qid_index)
     else:
@@ -210,12 +183,8 @@ def split_partition(partition: Partition, qid_index: int):
 
 
 def anonymize(partition: Partition):
-    """ Main procedure of Half_Partition. Recursively partition groups until not allowable.
-    """
-    # print(len(partition)
-    # print(partition.attr_split_allowed_list
-    # pdb.set_trace()
-
+    """ Main procedure of Half_Partition. Recursively partition groups until not allowable. """
+    
     # Close the EC, if not splittable any more
     if check_splitable(partition) is False:
         RESULT.append(partition)
@@ -246,7 +215,7 @@ def check_splitable(partition: Partition):
 
 # DATA_REQ_EZ: number of qids 
 #   - number of qids through len(data[0]) - 1
-def init(att_trees: List[GenTree | NumRange], data, k: int, QI_num=-1):
+def init(att_trees: list[NumRange | dict[str, GenTree]], data, k: int, QI_num=-1):
     """ Reset all global variables """
 
     # To change the value of a global variable inside a function, refer to the variable by using the global keyword:
