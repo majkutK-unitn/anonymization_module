@@ -237,52 +237,58 @@ def init(attr_tree: list[NumRange | dict[str, GenTree]], k: int):
 #   - pass to init
 #   - pass to whole_partition on initalization
 #   - number of records through -> len(data)
-def mondrian(attr_tree: list[GenTree | NumRange], data: list[list[str]], k: int, QI_num=-1):
+def mondrian(attr_tree: list[GenTree | NumRange], k: int):
     """
-    basic Mondrian for k-anonymity.
+    Basic Mondrian for k-anonymity.
     This fuction support both numeric values and categoric values.
     For numeric values, each iterator is a mean split.
-    For categoric values, each iterator is a split on GH.
+    For categoric values, each iterator is a split using the generalization hierarchies.
     The final result is returned in 2-dimensional list.
     """
-    init(attr_tree, data, k, QI_num)
-    result = []
+
+    init(attr_tree, k)
+    
     attr_gen_list = []
     attr_width_list = []
 
+    # TODO: feed in the NUM_OF_QIDS_USED
     for i in range(NUM_OF_QIDS_USED):
-        if IS_QID_CATEGORICAL[i] is False:
+        if IS_QID_CATEGORICAL[i] is False:            
             MAX_RANGE_PER_QID.append(ATTR_TREES[i].range)
-            attr_width_list.append((0, len(ATTR_TREES[i].sort_value) - 1))
+            attr_width_list.append(ATTR_TREES[i].range)
             attr_gen_list.append(ATTR_TREES[i].value)
         else:
             MAX_RANGE_PER_QID.append(len(ATTR_TREES[i]['*']))
             attr_width_list.append(len(ATTR_TREES[i]['*']))
             attr_gen_list.append('*')
 
-    whole_partition = Partition(data, attr_width_list, attr_gen_list, NUM_OF_QIDS_USED)
+    # TODO: write the query for counting all the documents
+    count = ES_CONNECTOR.count()
+    whole_partition = Partition(count, attr_width_list, attr_gen_list, NUM_OF_QIDS_USED)
     
     start_time = time.time()
     anonymize(whole_partition)
 
     rtime = float(time.time() - start_time)
     ncp = 0.0
+
     for partition in FINAL_PARTITIONS:
         r_ncp = 0.0
         for i in range(NUM_OF_QIDS_USED):
             r_ncp += get_normalized_width(partition, i)
-        temp = partition.attr_gen_list
-        for i in range(len(partition)):
-            result.append(temp + [partition.members[i][-1]])
+
         r_ncp *= len(partition)
         ncp += r_ncp
+
     # covert to NCP percentage
     ncp /= NUM_OF_QIDS_USED
     ncp /= len(data)
     ncp *= 100
-    if len(result) != len(data):
+
+    if len(FINAL_PARTITIONS) != count:
         print("Losing records during anonymization!!")
         pdb.set_trace()
+
     if __DEBUG:
         print("K=%d" % k)
         print("size of partitions")
@@ -290,4 +296,5 @@ def mondrian(attr_tree: list[GenTree | NumRange], data: list[list[str]], k: int,
         temp = [len(t) for t in FINAL_PARTITIONS]
         print(sorted(temp))
         print("NCP = %.2f %%" % ncp)
-    return (result, (ncp, rtime))
+
+    return (FINAL_PARTITIONS, (ncp, rtime))

@@ -10,3 +10,5 @@ class NumRange(object):
     def __init__(self, min: int, max: int):        
         self.min = min
         self.max = max
+        self.range = max - min
+        self.value = f'{min},{max}'
