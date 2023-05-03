@@ -24,16 +24,17 @@ def get_normalized_width(partition: Partition, qid_index: int) -> float:
 
 
 def choose_qid(partition: Partition) -> int:
-    """ Chooss QID with largest normlized Width and return its index. """
+    """ Choose QID with largest normlized width and return its index. """
 
     max_norm_width = -1
     qid_index = -1
 
-    for i in range(NUM_OF_QIDS_USED):
+    for i in range(NUM_OF_QIDS_USED):        
         if partition.attribute_split_allowed_list[i] == 0:
             continue
         
         normalized_width = get_normalized_width(partition, i)
+        
         if normalized_width > max_norm_width:
             max_norm_width = normalized_width
             qid_index = i
