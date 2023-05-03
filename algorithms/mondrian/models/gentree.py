@@ -5,12 +5,12 @@ class GenTree(object):
     """Class for generalization hierarchies (Taxonomy Tree), tree nodes are stored in the instances.
 
     Attributes
-        self.value              node value
-        self.level              tree level (top is 0)
-        self.num_of_leaves      number of leaf nodes covered
-        self.parent             ancestor node list
-        self.children           direct successor node list
-        self.covered_nodes      all nodes covered by current node
+        value              node value
+        level              tree level (top is 0)
+        num_of_leaves      number of leaf nodes covered
+        parent             ancestor node list
+        children           direct successor node list
+        covered_nodes      all nodes covered by current node
     """
 
     def __init__(self, value: str = None, parent: GenTree = None, is_leaf=False):
