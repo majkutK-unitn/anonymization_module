@@ -21,6 +21,17 @@ class EsConnector(MondrianAPI):
     def search(self, query):                
         res = self.es.search(index="adults", query=query)                
         for hit in res['hits']['hits']:
-            print("%(age)s %(native_country)s: %(education)s" % hit["_source"])            
+            print("%(age)s %(native_country)s: %(education)s" % hit["_source"])
 
 
+    def get_median(self):        
+        query = {
+            "aggs": {
+                "age_median": { "percentiles": { "field": "age", "percents": [ 50 ] }},
+                "age_value_after_median": { "percentiles": { "field": "age", "percents": [ 52 ] }},
+                "age_min": { "min": { "field": "age" } },
+                "age_max": { "max": { "field": "age" } }
+            }
+        }
+
+        return self.search(query)
