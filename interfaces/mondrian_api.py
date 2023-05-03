@@ -1,16 +1,18 @@
+from typing import Tuple
+
+from algorithms.mondrian.models.partition import Partition
 from interfaces.abstract_api import AbstractAPI
-from models.partition import Partition
 
 
 class MondrianAPI(AbstractAPI):
     def __init__(self):
         pass
 
-    def push_ecs(ecs: list) -> bool:
+    def push_ecs(self, ecs: list) -> bool:
         pass
 
-    def get_median(partition: Partition, qid) -> int|float:
+    def get_median(self, partition: Partition, qid_index: int) -> Tuple[str, str, str, str]:
         pass
 
-    def check_ec_validity(partition_candidate) -> bool:
+    def check_ec_validity(self, partition_candidate) -> bool:
         pass

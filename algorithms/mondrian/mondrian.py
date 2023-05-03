@@ -6,6 +6,7 @@ from typing import Tuple, List
 from algorithms.mondrian.models.gentree import GenTree
 from algorithms.mondrian.models.numrange import NumRange
 from algorithms.mondrian.models.partition import Partition
+from db_connectors.ec_connector import EsConnector
 
 
 __DEBUG = False
@@ -15,6 +16,8 @@ RESULT: List[Partition] = []
 ATT_TREES: List[GenTree | NumRange] = []
 IS_QID_CATEGORICAL: List[bool] = []
 QI_RANGE = []
+
+ES_CONNECTOR = EsConnector()
 
 
 def get_normalized_width(partition: Partition, qid_index: int) -> float:    
@@ -49,38 +52,6 @@ def choose_qid(partition: Partition) -> int:
     return qid_index
 
 
-# DATA_REQ
-#   - DIRECT for record in partition.members:
-#-----------------------------------------------------
-#    >> UNNECESSARY, IF the median can be calculated directly in the DB
-def get_frequency_set(partition: Partition, qid_index: int) -> dict[str, int]:
-    """ Count the number of unique values in the dataset for the attribute with the specified index, and thus generate a frequency set    
-    
-    Returns
-    -------
-    dict
-        the keys are unique string values of the attribute, while the values are the count per unique key
-    """
-
-    frequency_set = {}
-    for record in partition.members:
-        try:
-            frequency_set[record[qid_index]] += 1
-        except KeyError:
-            frequency_set[record[qid_index]] = 1
-    return frequency_set
-
-
-# DATA_REQ
-#   - direct processing through get_frequency_set()
-#       >> should find a way to calculate the median directly in the DB
-# ---------------------------------
-# - 50th percentile = median
-#
-# - unique_value_to_split_at: the median
-# - next_unique_value: 51th percentile (?)
-# - unique_values[0]: min
-# - unique_values[-1]: max
 def get_median(partition: Partition, qid_index: int) -> Tuple[str, str, str, str]:
     """ Find the middle of the partition
 
@@ -93,41 +64,8 @@ def get_median(partition: Partition, qid_index: int) -> Tuple[str, str, str, str
         unique_values[-1]
     """
 
-    frequency_set = get_frequency_set(partition, qid_index)    
-    # Sort the unique values for the attribute with the specified index
-    unique_values = list(frequency_set.keys())
-    unique_values.sort(key=lambda x: int(x))
     
-    # The number of records in the partition
-    num_of_records = sum(frequency_set.values())
-    middle_index_of_the_records = num_of_records / 2
-
-    # If there are less then 2k values OR only one (or less) unique value, ...
-    if middle_index_of_the_records < GLOBAL_K or len(unique_values) <= 1:
-        return ('', '', unique_values[0], unique_values[-1])
-    
-    records_processed = 0
-    unique_value_to_split_at = ''
-    unique_value_to_split_at_index = 0
-
-    for i, unique_value in enumerate(unique_values):
-        # Accumulate The number of records of the partition with the already processed unique values
-        records_processed += frequency_set[unique_value]
-        # If the number of records processed is more than half of the total amount of records in the partition, we have found the median
-        if records_processed >= middle_index_of_the_records:
-            unique_value_to_split_at = unique_value
-            unique_value_to_split_at_index = i
-            break
-    # The else keyword in a for loop specifies a block of code to be executed when the loop is finished
-    else:
-        print("Error: cannot find unique_value_to_split_at")    
-    try:
-        next_unique_value = unique_values[unique_value_to_split_at_index + 1]
-    # If the unique value along which we are splitting is the last one in the list
-    except IndexError:
-        next_unique_value = unique_value_to_split_at
-
-    return (unique_value_to_split_at, next_unique_value, unique_values[0], unique_values[-1])
+    return ES_CONNECTOR.get_median(partition, qid_index)
 
 
 def split_numerical_value(numeric_value: str, value_to_split_at: int) -> Tuple[str, str] | str:
