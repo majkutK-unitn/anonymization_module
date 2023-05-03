@@ -12,10 +12,10 @@ from db_connectors.ec_connector import EsConnector
 __DEBUG = False
 NUM_OF_QIDS_USED = 10
 GLOBAL_K = 0
-RESULT: List[Partition] = []
+FINAL_PARTITIONS: List[Partition] = []
 ATTR_TREES: list[NumRange | dict[str, GenTree]] = []
 IS_QID_CATEGORICAL: List[bool] = []
-QI_RANGE = []
+MAX_RANGE_PER_QID = []
 
 ES_CONNECTOR = EsConnector()
 
@@ -23,7 +23,7 @@ ES_CONNECTOR = EsConnector()
 def get_normalized_width(partition: Partition, qid_index: int) -> float:    
     """ Return Normalized width of partition """        
 
-    return partition.attr_width_list[qid_index] * 1.0 / QI_RANGE[qid_index]
+    return partition.attr_width_list[qid_index] * 1.0 / MAX_RANGE_PER_QID[qid_index]
 
 
 def choose_qid(partition: Partition) -> int:
@@ -180,6 +180,16 @@ def split_partition(partition: Partition, qid_index: int):
         return split_numerical_attribute(partition, qid_index)
     else:
         return split_categorical_attribute(partition, qid_index)
+    
+
+def check_splitable(partition: Partition):
+    """ Check if the partition can be further split while satisfying k-anonymity """
+
+    # If the sum is 0, it means that the allow array only contains 0s, that is no attributes is splittable any more
+    if sum(partition.attr_split_allowed_list) == 0:
+        return False
+    
+    return True
 
 
 def anonymize(partition: Partition):
@@ -187,7 +197,7 @@ def anonymize(partition: Partition):
     
     # Close the EC, if not splittable any more
     if check_splitable(partition) is False:
-        RESULT.append(partition)
+        FINAL_PARTITIONS.append(partition)
         return
     
     qid_index = choose_qid(partition)
@@ -205,25 +215,19 @@ def anonymize(partition: Partition):
             anonymize(sub_p)
 
 
-def check_splitable(partition: Partition):
-    """ Check if the partition can be further split while satisfying k-anonymity """
 
-    # If the sum is 0, it means that the allow array only contains 0s, that is no attributes is splittable any more
-    if sum(partition.attr_split_allowed_list) == 0:
-        return False
-    return True
 
 # DATA_REQ_EZ: number of qids 
 #   - number of qids through len(data[0]) - 1
-def init(att_trees: list[NumRange | dict[str, GenTree]], data, k: int, QI_num=-1):
+def init(attr_tree: list[NumRange | dict[str, GenTree]], data, k: int, QI_num=-1):
     """ Reset all global variables """
 
     # To change the value of a global variable inside a function, refer to the variable by using the global keyword:
-    global GLOBAL_K, RESULT, NUM_OF_QIDS_USED, ATTR_TREES, QI_RANGE, IS_QID_CATEGORICAL
-    ATTR_TREES = att_trees
+    global GLOBAL_K, FINAL_PARTITIONS, NUM_OF_QIDS_USED, ATTR_TREES, MAX_RANGE_PER_QID, IS_QID_CATEGORICAL
+    ATTR_TREES = attr_tree
 
     # Based on the received attribute tree, map the attributes into a boolean array that reflects if they are categorical or not
-    for tree in att_trees:
+    for tree in attr_tree:
         if isinstance(tree, NumRange):
             IS_QID_CATEGORICAL.append(False)
         else:
@@ -238,15 +242,15 @@ def init(att_trees: list[NumRange | dict[str, GenTree]], data, k: int, QI_num=-1
         NUM_OF_QIDS_USED = QI_num
 
     GLOBAL_K = k
-    RESULT = []
-    QI_RANGE = []
+    FINAL_PARTITIONS = []
+    MAX_RANGE_PER_QID = []
 
 
 # DATA_REQ_EZ: number of qids 
 #   - pass to init
 #   - pass to whole_partition on initalization
 #   - number of records through -> len(data)
-def mondrian(att_trees: list[GenTree | NumRange], data: list[list[str]], k: int, QI_num=-1):
+def mondrian(attr_tree: list[GenTree | NumRange], data: list[list[str]], k: int, QI_num=-1):
     """
     basic Mondrian for k-anonymity.
     This fuction support both numeric values and categoric values.
@@ -254,18 +258,18 @@ def mondrian(att_trees: list[GenTree | NumRange], data: list[list[str]], k: int,
     For categoric values, each iterator is a split on GH.
     The final result is returned in 2-dimensional list.
     """
-    init(att_trees, data, k, QI_num)
+    init(attr_tree, data, k, QI_num)
     result = []
     attr_gen_list = []
     attr_width_list = []
 
     for i in range(NUM_OF_QIDS_USED):
         if IS_QID_CATEGORICAL[i] is False:
-            QI_RANGE.append(ATTR_TREES[i].range)
+            MAX_RANGE_PER_QID.append(ATTR_TREES[i].range)
             attr_width_list.append((0, len(ATTR_TREES[i].sort_value) - 1))
             attr_gen_list.append(ATTR_TREES[i].value)
         else:
-            QI_RANGE.append(len(ATTR_TREES[i]['*']))
+            MAX_RANGE_PER_QID.append(len(ATTR_TREES[i]['*']))
             attr_width_list.append(len(ATTR_TREES[i]['*']))
             attr_gen_list.append('*')
 
@@ -276,7 +280,7 @@ def mondrian(att_trees: list[GenTree | NumRange], data: list[list[str]], k: int,
 
     rtime = float(time.time() - start_time)
     ncp = 0.0
-    for partition in RESULT:
+    for partition in FINAL_PARTITIONS:
         r_ncp = 0.0
         for i in range(NUM_OF_QIDS_USED):
             r_ncp += get_normalized_width(partition, i)
@@ -295,8 +299,8 @@ def mondrian(att_trees: list[GenTree | NumRange], data: list[list[str]], k: int,
     if __DEBUG:
         print("K=%d" % k)
         print("size of partitions")
-        print(len(RESULT))
-        temp = [len(t) for t in RESULT]
+        print(len(FINAL_PARTITIONS))
+        temp = [len(t) for t in FINAL_PARTITIONS]
         print(sorted(temp))
         print("NCP = %.2f %%" % ncp)
     return (result, (ncp, rtime))
