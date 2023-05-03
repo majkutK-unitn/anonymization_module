@@ -215,36 +215,23 @@ def anonymize(partition: Partition):
             anonymize(sub_p)
 
 
-
-
-# DATA_REQ_EZ: number of qids 
-#   - number of qids through len(data[0]) - 1
-def init(attr_tree: list[NumRange | dict[str, GenTree]], data, k: int, QI_num=-1):
+def init(attr_tree: list[NumRange | dict[str, GenTree]], k: int):
     """ Reset all global variables """
 
     # To change the value of a global variable inside a function, refer to the variable by using the global keyword:
-    global GLOBAL_K, FINAL_PARTITIONS, NUM_OF_QIDS_USED, ATTR_TREES, MAX_RANGE_PER_QID, IS_QID_CATEGORICAL
+    global GLOBAL_K, FINAL_PARTITIONS, ATTR_TREES, MAX_RANGE_PER_QID, IS_QID_CATEGORICAL
     ATTR_TREES = attr_tree
+    GLOBAL_K = k
+    FINAL_PARTITIONS = []
+    MAX_RANGE_PER_QID = []
 
     # Based on the received attribute tree, map the attributes into a boolean array that reflects if they are categorical or not
     for tree in attr_tree:
         if isinstance(tree, NumRange):
             IS_QID_CATEGORICAL.append(False)
         else:
-            IS_QID_CATEGORICAL.append(True)
-
-    # Use all QIDs in this case
-    if QI_num <= 0:
-        # We do not need the SA that is appended to each line as the last value
-        NUM_OF_QIDS_USED = len(data[0]) - 1
-    else:
-        # Use only the desired number of QIDs
-        NUM_OF_QIDS_USED = QI_num
-
-    GLOBAL_K = k
-    FINAL_PARTITIONS = []
-    MAX_RANGE_PER_QID = []
-
+            IS_QID_CATEGORICAL.append(True)    
+    
 
 # DATA_REQ_EZ: number of qids 
 #   - pass to init
