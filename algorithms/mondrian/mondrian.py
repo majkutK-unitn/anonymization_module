@@ -3,9 +3,9 @@ import time
 
 from typing import Tuple, List
 
-from algorithms.mondrian.models.gentree import GenTree
-from algorithms.mondrian.models.numrange import NumRange
-from algorithms.mondrian.models.partition import Partition
+from models.gentree import GenTree
+from models.numrange import NumRange
+from models.partition import Partition
 from db_connectors.ec_connector import EsConnector
 
 
@@ -87,13 +87,10 @@ def split_numerical_value(numeric_value: str, value_to_split_at: int) -> Tuple[s
             r_range = max
         else:
             r_range = value_to_split_at + ',' + max
+            
         return l_range, r_range
 
-# DATA_REQ
-#   - direct processing through get_median()
-#   - direct for record in partition.members:
-#----------------------------------------------
-#    >> UNNECESSARY: only for further storing
+
 def split_numerical_attribute(partition: Partition, qid_index: int) -> list[Partition]:
     """ Split numeric attribute by along the median, creating two new sub-partitions """
 
@@ -101,51 +98,38 @@ def split_numerical_attribute(partition: Partition, qid_index: int) -> list[Part
 
     (unique_value_to_split_at, next_unique_value, min_unique_value, max_unique_value) = get_median(partition, qid_index)
 
-    p_low = ATT_TREES[qid_index].dict[min_unique_value]
-    p_high = ATT_TREES[qid_index].dict[max_unique_value]
-
     # This if-else seems unnecessary already handled in init and then in each iteration through the parts below of this function
     if min_unique_value == max_unique_value:
         partition.attribute_generalization_list[qid_index] = min_unique_value
     else:
         partition.attribute_generalization_list[qid_index] = min_unique_value + ',' + max_unique_value
 
-    partition.attribute_width_list[qid_index] = (p_low, p_high)
+    partition.attribute_width_list[qid_index] = max_unique_value - min_unique_value
 
     if unique_value_to_split_at == '' or unique_value_to_split_at == next_unique_value:        
         return []
-    
-    middle_value_index = ATT_TREES[qid_index].dict[unique_value_to_split_at]
 
+    # Copy the current state of the generalization into the new partitions
     l_attribute_generalization_list = partition.attribute_generalization_list[:]
     r_attribute_generalization_list = partition.attribute_generalization_list[:]
-    l_attribute_generalization_list[qid_index], r_attribute_generalization_list[qid_index] = split_numerical_value(partition.attribute_generalization_list[qid_index], unique_value_to_split_at)
-    
-    l_sub_partition: List[Partition] = []
-    r_sub_partition: List[Partition] = []
 
-    for record in partition.members:
-        # The index of the attribute value of the record in the numrange.sort_value array
-        record_index = ATT_TREES[qid_index].dict[record[qid_index]]
-
-        if record_index <= middle_value_index:
-            # l_sub_partition = [min_unique_value, means]
-            l_sub_partition.append(record)
-        else:
-            # r_sub_partition = (mean, max_unique_value]
-            r_sub_partition.append(record)
+    l_attribute_generalization_list[qid_index], r_attribute_generalization_list[qid_index] = split_numerical_value(partition.attribute_generalization_list[qid_index], unique_value_to_split_at)        
 
     # The normalized width of all attributes remain the same in the two newly created partitions, except for the one along which we execute the split
     l_attribute_width_list = partition.attribute_width_list[:]
     r_attribute_width_list = partition.attribute_width_list[:]
 
-    # The width of the new, "left" partition is composed of the beginning of the original range and the median value
-    l_attribute_width_list[qid_index] = (partition.attribute_width_list[qid_index][0], middle_value_index)
-    # The width of the new, "right" partition is composed of the next value after the median value we used and the end of the original range
-    r_attribute_width_list[qid_index] = (ATT_TREES[qid_index].dict[next_unique_value], partition.attribute_width_list[qid_index][1])
+    # The width of the new, "left" partition is composed of the minimum of the original range and the median value    
+    l_attribute_width_list[qid_index] = unique_value_to_split_at - min_unique_value
+    # The width of the new, "right" partition is composed of the next value after the median value we used and the maximal value of the range    
+    r_attribute_width_list[qid_index] = max_unique_value - next_unique_value
 
-    sub_partitions.append(Partition(l_sub_partition, l_attribute_width_list, l_attribute_generalization_list, NUM_OF_QIDS_USED))
-    sub_partitions.append(Partition(r_sub_partition, r_attribute_width_list, r_attribute_generalization_list, NUM_OF_QIDS_USED))
+    # TODO: write the query for counting the items in the new subpartitions
+    l_count = ES_CONNECTOR.count()
+    r_count = ES_CONNECTOR.count()
+
+    sub_partitions.append(Partition(l_count, l_attribute_width_list, l_attribute_generalization_list, NUM_OF_QIDS_USED))
+    sub_partitions.append(Partition(r_count, r_attribute_width_list, r_attribute_generalization_list, NUM_OF_QIDS_USED))
 
     return sub_partitions
 
