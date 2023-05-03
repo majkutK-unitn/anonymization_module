@@ -1,4 +1,5 @@
 from interfaces.abstract_api import AbstractAPI
+from models.partition import Partition
 
 
 class MondrianAPI(AbstractAPI):
@@ -8,7 +9,7 @@ class MondrianAPI(AbstractAPI):
     def push_ecs(ecs: list) -> bool:
         pass
 
-    def get_median(partition, qid) -> int|float:
+    def get_median(partition: Partition, qid) -> int|float:
         pass
 
     def check_ec_validity(partition_candidate) -> bool:
