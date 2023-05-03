@@ -17,7 +17,7 @@ class GenTree(object):
         self.value = str('')
         self.level = int(0)
         self.num_of_leaves = int(0)
-        self.parents: list[GenTree] = []
+        self.ancestors: list[GenTree] = []
         self.children: list[GenTree] = []
         self.covered_nodes: dict[str, GenTree] = {}
 
@@ -26,19 +26,19 @@ class GenTree(object):
             self.covered_nodes[value] = self
 
         if parent is not None:
-            self.parents = parent.parents[:]
+            self.ancestors = parent.ancestors[:]
             # Push to the beginning of the array the direct parent of the node
-            self.parents.insert(0, parent)
+            self.ancestors.insert(0, parent)
             self.level = parent.level + 1
 
             # Register oneself as a child of its direct parent
             parent.children.append(self)
 
             # Register oneself as a covered node of all of its ancestors
-            for node_ancestor in self.parents:
-                node_ancestor.covered_nodes[self.value] = self
+            for ancestor in self.ancestors:
+                ancestor.covered_nodes[self.value] = self
                 if is_leaf:
-                    node_ancestor.num_of_leaves += 1
+                    ancestor.num_of_leaves += 1
 
     def node(self, value: str) -> GenTree|None:
         """ Look for a node with the parameter value."""
