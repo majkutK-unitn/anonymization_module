@@ -3,4 +3,5 @@ from db_connectors.ec_connector import EsConnector
 
 if __name__ == '__main__':
     connector = EsConnector()
-    connector.run_query({"term": {"_id": {"value": "WS_m3IcBJ6zU8THO1VUA"}}})
+    connector.search({"term": {"_id": {"value": "CTdo4IcBJ6zU8THOrfFz"}}})
+    connector.get_partition_count()

@@ -17,11 +17,15 @@ class EsConnector(MondrianAPI):
                 ca_certs=ROOT_CA_PATH
             )    
 
-
     def search(self, query):                
         res = self.es.search(index="adults", query=query)                
         for hit in res['hits']['hits']:
             print("%(age)s %(native_country)s: %(education)s" % hit["_source"])
+
+    
+    def count(self, query):        
+        res = self.es.count(index="adults", query=query)        
+        print("Count: %d" % res['count'])        
 
 
     def get_median(self):        
@@ -35,3 +39,20 @@ class EsConnector(MondrianAPI):
         }
 
         return self.search(query)
+    
+    
+    def get_partition_count(self):
+        query = {
+            "range": {
+                "age": {
+                    "gte": 10,
+                    "lte": 20
+                    }
+            }
+        }
+        
+        return self.count(query)
+    
+
+    def map_partition_to_query(self, partition):
+        return None
