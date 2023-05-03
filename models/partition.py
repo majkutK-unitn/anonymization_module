@@ -8,6 +8,8 @@ class Partition(object):
         allow                               (list per QID) 0 if the partition cannot be split further along the attribute, 1 otherwise
     """
 
+    is_qid_categorical: dict[str, bool]
+
     def __init__(self, count: int, attribute_width_list: list[int], attribute_generalization_list: list[str], qi_len: int):        
         self.count = count
         self.attr_width_list = list(attribute_width_list)

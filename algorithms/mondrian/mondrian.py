@@ -8,13 +8,13 @@ from models.numrange import NumRange
 from models.partition import Partition
 from db_connectors.ec_connector import EsConnector
 
+# TODO: comment all dicts to have a clear understanding of what the keys and what the values are
 
 __DEBUG = False
 NUM_OF_QIDS_USED = 10
 GLOBAL_K = 0
 FINAL_PARTITIONS: List[Partition] = []
 ATTR_TREES: list[NumRange | dict[str, GenTree]] = []
-IS_QID_CATEGORICAL: List[bool] = []
 MAX_RANGE_PER_QID = []
 
 ES_CONNECTOR = EsConnector()
@@ -176,7 +176,7 @@ def split_categorical_attribute(partition: Partition, qid_index: int) -> list[Pa
 def split_partition(partition: Partition, qid_index: int):
     """ Split partition and distribute records to different sub-partitions """
 
-    if IS_QID_CATEGORICAL[qid_index] is False:
+    if Partition.is_qid_categorical[qid_index] is False:
         return split_numerical_attribute(partition, qid_index)
     else:
         return split_categorical_attribute(partition, qid_index)
@@ -219,7 +219,7 @@ def init(attr_tree: list[NumRange | dict[str, GenTree]], k: int):
     """ Reset all global variables """
 
     # To change the value of a global variable inside a function, refer to the variable by using the global keyword:
-    global GLOBAL_K, FINAL_PARTITIONS, ATTR_TREES, MAX_RANGE_PER_QID, IS_QID_CATEGORICAL
+    global GLOBAL_K, FINAL_PARTITIONS, ATTR_TREES, MAX_RANGE_PER_QID
     ATTR_TREES = attr_tree
     GLOBAL_K = k
     FINAL_PARTITIONS = []
@@ -228,9 +228,9 @@ def init(attr_tree: list[NumRange | dict[str, GenTree]], k: int):
     # Based on the received attribute tree, map the attributes into a boolean array that reflects if they are categorical or not
     for tree in attr_tree:
         if isinstance(tree, NumRange):
-            IS_QID_CATEGORICAL.append(False)
+            Partition.is_qid_categorical.append(False)
         else:
-            IS_QID_CATEGORICAL.append(True)    
+            Partition.is_qid_categorical.append(True)    
     
 
 # DATA_REQ_EZ: number of qids 
@@ -253,7 +253,7 @@ def mondrian(attr_tree: list[GenTree | NumRange], k: int):
 
     # TODO: feed in the NUM_OF_QIDS_USED
     for i in range(NUM_OF_QIDS_USED):
-        if IS_QID_CATEGORICAL[i] is False:            
+        if Partition.is_qid_categorical[i] is False:            
             MAX_RANGE_PER_QID.append(ATTR_TREES[i].range)
             attr_width_list.append(ATTR_TREES[i].range)
             attr_gen_list.append(ATTR_TREES[i].value)
