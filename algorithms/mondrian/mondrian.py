@@ -1,19 +1,11 @@
-"""
-main module of basic Mondrian
-"""
-
-# !/usr/bin/env python
-# coding=utf-8
-
-
 import pdb
 import time
 
 from typing import Tuple, List
-from models.gentree import GenTree
 
-from models.numrange import NumRange
-from models.partition import Partition
+from algorithms.mondrian.models.gentree import GenTree
+from algorithms.mondrian.models.numrange import NumRange
+from algorithms.mondrian.models.partition import Partition
 
 
 __DEBUG = False
@@ -26,23 +18,9 @@ QI_RANGE = []
 
 
 def get_normalized_width(partition: Partition, qid_index: int) -> float:    
-    """
-    Return Normalized width of partition. Similar to NCP        
+    """ Return Normalized width of partition """        
 
-        Parameters
-        ----------
-        qid_index : int
-            The index of the QID in the data
-    """        
-
-    if IS_QID_CATEGORICAL[qid_index] is False:
-        low = partition.attribute_width_list[qid_index][0]
-        high = partition.attribute_width_list[qid_index][1]
-        width = float(ATT_TREES[qid_index].sort_value[high]) - float(ATT_TREES[qid_index].sort_value[low])
-    else:
-        width = partition.attribute_width_list[qid_index]
-
-    return width * 1.0 / QI_RANGE[qid_index]
+    return partition.attribute_width_list[qid_index] * 1.0 / QI_RANGE[qid_index]
 
 
 def choose_qid(partition: Partition) -> int:
