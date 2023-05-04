@@ -1,20 +1,20 @@
+from models.attribute import Attribute
+from models.gentree import GenTree
+from models.numrange import NumRange
+
+
 class Partition(object):
     """ Class representing one partition output by the Mondrian cuts
 
     Attributes
         count                               the number of items in the partition
-        attribute_width_list                (list per QID) for categorical attributes stores the number of leaf node, for numerical attribute stores the number range
-        attribute_generalization_list       (list per QID) the current state of the generalization
-        allow                               (list per QID) 0 if the partition cannot be split further along the attribute, 1 otherwise
+        attributes                          key-value pair, where the key is the attribute name and the value is the state of attribute in the current anonymization process
     """
+    attr_dict: dict[str, NumRange|GenTree]
 
-    is_qid_categorical: dict[str, bool]
-
-    def __init__(self, count: int, attribute_width_list: list[int], attribute_generalization_list: list[str], qi_len: int):        
+    def __init__(self, count: int, attributes: dict[str, Attribute]):        
         self.count = count
-        self.attr_width_list = list(attribute_width_list)
-        self.attr_gen_list = list(attribute_generalization_list)
-        self.attr_split_allowed_list = [1] * qi_len
+        self.attributes = attributes
 
     # The number of records in partition
     def __len__(self):        
