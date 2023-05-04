@@ -70,33 +70,33 @@ class EsConnector(MondrianAPI):
     
 
     def map_attributes_to_query(self, attributes: dict[str, Attribute]):
-        filter = []
+        must = []
 
         for attr_name in attributes.keys():
             node_or_range = Partition.attr_dict[attr_name]
 
             if isinstance(node_or_range, GenTree):
-                # TODO:                 
-                #   (2) simply putting all the values into a new term links them through ANDs in the query, thus it will have no results. Use should instead of filter
-                pass
-                for child in node_or_range.covered_nodes.values():
+                leaf_values = []
+                current_node = node_or_range.node(attributes[attr_name].gen_value)
+                for covered_node in current_node.covered_nodes.values():
                     # Only filter for leaf values, as the intermediate ones are not in present in the dataset, they should not be part of the queries
-                    if not child.children:
-                        filter.append({"term": {attr_name: child.value}})
+                    if not covered_node.children:
+                        leaf_values.append(covered_node.value)
+
+                must.append({"terms": {f"{attr_name}": leaf_values}})
             else:
                 range_min_and_max = attributes[attr_name].gen_value.split(',')
                 # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
                 if len(range_min_and_max) <= 1:                    
-                    filter.append({"term": {attr_name: range_min_and_max}})                    
+                    must.append({"term": {attr_name: range_min_and_max}})                    
                 else:
-                    filter.append({"range": {
+                    must.append({"range": {
                         attr_name: {
                             "gte": range_min_and_max[0],
                             "lte": range_min_and_max[1]
                             }}})
         return {
             "bool": {
-                "filter": filter
+                "must": must
             }    
         }
-        
