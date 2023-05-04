@@ -75,7 +75,7 @@ class EsConnector(MondrianAPI):
 
         res = self.es_client.search(index=self.INDEX_NAME, size=0, aggs=aggs)
 
-        return res["aggregations"]["age_min"]['value'], res["aggregations"]["age_max"]['value']
+        return res["aggregations"][f"{attr_name}_min"]['value'], res["aggregations"][f"{attr_name}_max"]['value']
     
 
     def map_attributes_to_query(self, attributes: dict[str, Attribute]):
