@@ -1,0 +1,113 @@
+{
+    "k": 10,
+    "qid_attrs": ["age", "workclass", "education_num", "marital_status", "occupation", "race", "sex", "native_country"],
+    "sensitive_attrs": ["class"],
+    "gen_hierarchies": [
+        {
+            "name": "marital_status",
+            "tree": {
+                "value": "*",
+                "children": [
+                    {
+                        "value": "Never-married",
+                        "children": []
+                    },
+                    {
+                        "value": "Married",
+                        "children": [
+                            {
+                                "value": "Married-civ-spouse",
+                                "children": []
+                            },
+                            {
+                                "value": "Married-AF-spouse",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "value": "leave",
+                        "children": [
+                            {
+                                "value": "Divorced",
+                                "children": []
+                            },
+                            {
+                                "value": "Separated",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "value": "alone",
+                        "children": [
+                            {
+                                "value": "Widowed",
+                                "children": []
+                            },
+                            {
+                                "value": "Married-spouse-absent",
+                                "children": []
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "name": "workclass",
+            "tree": {
+                "value": "*",
+                "children": [
+                    {
+                        "value": "Private",
+                        "children": []
+                    },
+                    {
+                        "value": "Self-employ",
+                        "children": [
+                            {
+                                "value": "Self-emp-not-inc",
+                                "children": []
+                            },
+                            {
+                                "value": "Self-emp-inc",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "value": "gov",
+                        "children": [
+                            {
+                                "value": "Federal-gov",
+                                "children": []
+                            },
+                            {
+                                "value": "Local-gov",
+                                "children": []
+                            },
+                            {
+                                "value": "State-gov",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "value": "not-work",
+                        "children": [
+                            {
+                                "value": "Without-pay",
+                                "children": []
+                            },
+                            {
+                                "value": "Never-worked",
+                                "children": []
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
