@@ -27,9 +27,6 @@ class EsConnector(MondrianAPI):
     def push_ecs(ecs: list) -> bool:
         pass
 
-    def get_number_of_nodes_covered(self, partition: Partition, qid_index: int, values: list[str]):
-        pass
-
 
     def get_document_count(self, attributes: dict[str, Attribute] = None):    
         query = None
