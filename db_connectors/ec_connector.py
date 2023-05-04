@@ -1,3 +1,4 @@
+from models.gentree import GenTree
 from models.partition import Partition
 from interfaces.mondrian_api import MondrianAPI
 
@@ -18,7 +19,11 @@ class EsConnector(MondrianAPI):
                 hosts="https://neteye2.test:9200",
                 api_key=(API_KEY_ID, API_KEY_SECRET), 
                 ca_certs=ROOT_CA_PATH
-            )    
+            )
+
+    def push_ecs(ecs: list) -> bool:
+        pass
+        
 
     def search(self, query):                
         res = self.es_client.search(index=self.INDEX_NAME, query=query)                
@@ -60,25 +65,28 @@ class EsConnector(MondrianAPI):
         return self.count(query)
     
 
-    # TODO: 
-    #   (1) reach the generalization hierarchy to be able to handle 
-    #   (2) get access to the attribute names
     def map_partition_to_query(self, partition: Partition):
-        filter = {}
+        filter = {
+            "term": {},
+            "range": {}
+        }
 
-        for generalized_value in partition.attr_gen_list:
-            if Partition.is_qid_categorical:
-                for leaf_node_value in ATTR_TREE.node(generalized_value).covered_nodes.keys():
-                    filter['term'][name] = leaf_node_value
+        for attr_name in partition.attributes.keys():
+            node_or_range = Partition.attr_dict[attr_name]
+
+            if isinstance(node_or_range, GenTree):
+                for leaf_node_value in node_or_range.covered_nodes.keys():
+                    filter['term'][attr_name] = leaf_node_value
             else:
-                range_min_and_max = generalized_value.split(',')
+                range_min_and_max = node_or_range.value.split(',')
                 # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
                 if len(range_min_and_max) <= 1:
-                    filter['term'][name] = generalized_value
+                    filter['term'][attr_name] = range_min_and_max
                 else:
-                    filter['range'][name]['gte'] = range_min_and_max[0]
-                    filter['range'][name]['lte'] = range_min_and_max[1]
-
+                    filter['range'][attr_name] = {
+                        "gte": range_min_and_max[0],
+                        "lte": range_min_and_max[1]
+                    }                    
 
         return {
             "query": {
