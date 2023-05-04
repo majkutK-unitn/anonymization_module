@@ -76,12 +76,13 @@ class EsConnector(MondrianAPI):
             node_or_range = Partition.attr_dict[attr_name]
 
             if isinstance(node_or_range, GenTree):
-                # TODO: 
-                #   (1) the covered_values list also contains the intermediate node values that are not needed as part of the query
+                # TODO:                 
                 #   (2) simply putting all the values into a new term links them through ANDs in the query, thus it will have no results. Use should instead of filter
                 pass
-                #for leaf_node_value in node_or_range.covered_nodes.keys():                    
-                #    filter.append({"term": {attr_name: leaf_node_value}})
+                for child in node_or_range.covered_nodes.values():
+                    # Only filter for leaf values, as the intermediate ones are not in present in the dataset, they should not be part of the queries
+                    if not child.children:
+                        filter.append({"term": {attr_name: child.value}})
             else:
                 range_min_and_max = attributes[attr_name].gen_value.split(',')
                 # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
