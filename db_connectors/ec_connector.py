@@ -1,3 +1,4 @@
+from typing import Tuple
 from models.gentree import GenTree
 from models.partition import Partition
 from interfaces.mondrian_api import MondrianAPI
@@ -63,6 +64,19 @@ class EsConnector(MondrianAPI):
         }
         
         return self.count(query)
+    
+
+    def get_attribute_min_max(self, attr_name: str) -> Tuple[int,int]:
+        aggs = {            
+            f"{attr_name}_min": { "min": { "field": attr_name } },
+            f"{attr_name}_max": { "max": { "field": attr_name } },
+        }
+
+        res = self.es_client.search(index=self.INDEX_NAME, size=0, aggs=aggs)["aggregations"]
+
+        return res["age_min"]['value'], res["age_max"]['value']
+    
+
     
 
     def map_partition_to_query(self, partition: Partition):
