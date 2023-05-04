@@ -32,9 +32,9 @@ class EsConnector(MondrianAPI):
         query = None
         
         if attributes is not None:
-            query = self.map_attributes_to_query(attributes)
+            query = {"query": self.map_attributes_to_query(attributes)}
 
-        res = self.es_client.count(index="adults", body={"query": query})
+        res = self.es_client.count(index="adults", body=query)
 
         return res["count"]
 
