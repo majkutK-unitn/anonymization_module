@@ -18,4 +18,4 @@ class Partition(object):
 
     # The number of records in partition
     def __len__(self):        
-        return len(self.count)
+        return self.count
