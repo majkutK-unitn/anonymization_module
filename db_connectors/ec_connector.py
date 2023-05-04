@@ -39,32 +39,23 @@ class EsConnector(MondrianAPI):
         return res["count"]
 
 
-    def get_median(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[str, str, str, str]:
-        """ Find the middle of the partition
-
-        Returns
-        -------
-        (str, str, str, str) > (median, value_after_median, min, max)
-        """
+    def get_attribute_median_and_next_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[str, str]:
+        """ Find the middle of the partition and the next value that follows the median """
         
         query = self.map_attributes_to_query(attributes)
         num_of_docs_in_partition = self.get_document_count(attributes)
         # At what percentage of the dataset is the value right after the median?
-        percentile_for_value_after_median = (((num_of_docs_in_partition * 0.5) + 1) / num_of_docs_in_partition) * 100        
+        percentile_for_value_after_median = (((num_of_docs_in_partition * 0.5) + 1) / num_of_docs_in_partition) * 100
 
         aggs = {            
             f"{attr_name}_median": { "percentiles": { "field": attr_name, "percents": [ 50 ] }},
-            f"{attr_name}_value_after_median": { "percentiles": { "field": attr_name, "percents": [ percentile_for_value_after_median ] }},
-            f"{attr_name}_min": { "min": { "field": attr_name } },
-            f"{attr_name}_max": { "max": { "field": attr_name } }            
+            f"{attr_name}_value_after_median": { "percentiles": { "field": attr_name, "percents": [ percentile_for_value_after_median ] }},            
         }
 
         res = self.es_client.search(index=self.INDEX_NAME, query=query, size=0, aggs=aggs)
 
         return list(res["aggregations"][f"{attr_name}_median"]['values'].values())[0], \
-                list(res["aggregations"][f"{attr_name}_value_after_median"]['values'].values())[0], \
-                res["aggregations"][f"{attr_name}_min"]['value'], \
-                res["aggregations"][f"{attr_name}_max"]['value']
+                list(res["aggregations"][f"{attr_name}_value_after_median"]['values'].values())[0]
     
 
     def get_attribute_min_max(self, attr_name: str) -> Tuple[int,int]:
