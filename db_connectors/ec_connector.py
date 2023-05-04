@@ -34,20 +34,47 @@ class EsConnector(MondrianAPI):
     
     def count(self, query):        
         res = self.es_client.count(index="adults", query=query)        
-        print("Count: %d" % res['count'])        
+        print("Count: %d" % res['count'])
 
 
-    def get_median(self):        
-        query = {
-            "aggs": {
-                "age_median": { "percentiles": { "field": "age", "percents": [ 50 ] }},
-                "age_value_after_median": { "percentiles": { "field": "age", "percents": [ 52 ] }},
-                "age_min": { "min": { "field": "age" } },
-                "age_max": { "max": { "field": "age" } }
-            }
+    def get_document_count(self, partition: Partition = None):    
+        query = None
+        
+        if partition is not None:
+            query = self.map_partition_to_query(partition)
+
+        res = self.es_client.count(index="adults", body={"query": query})
+
+        return res["count"]
+
+
+    def get_median(self, partition: Partition, attr_name: str) -> Tuple[str, str, str, str]:
+        """ Find the middle of the partition
+
+        Returns
+        -------
+        (str, str, str, str) > (median, value_after_median, min, max)
+        """
+        
+        query = self.map_partition_to_query(partition)
+        num_of_docs_in_partition = self.get_document_count(partition)
+        # At what percentage of the dataset is the value right after the median?
+        percentile_for_value_after_median = (((num_of_docs_in_partition * 0.5) + 1) / num_of_docs_in_partition) * 100        
+
+        aggs = {            
+            f"{attr_name}_median": { "percentiles": { "field": attr_name, "percents": [ 50 ] }},
+            f"{attr_name}_value_after_median": { "percentiles": { "field": attr_name, "percents": [ percentile_for_value_after_median ] }},
+            f"{attr_name}_min": { "min": { "field": attr_name } },
+            f"{attr_name}_max": { "max": { "field": attr_name } }            
         }
 
-        return self.search(query)
+        res = self.es_client.search(index=self.INDEX_NAME, query=query, size=0, aggs=aggs)
+
+        return list(res["aggregations"][f"{attr_name}_median"]['values'].values())[0], \
+                list(res["aggregations"][f"{attr_name}_value_after_median"]['values'].values())[0], \
+                res["aggregations"][f"{attr_name}_min"]['value'], \
+                res["aggregations"][f"{attr_name}_max"]['value']
+    
     
     def get_number_of_nodes_covered(self, partition: Partition, qid_index: int, values: list[str]):
         pass
@@ -64,12 +91,6 @@ class EsConnector(MondrianAPI):
         }
         
         return self.count(query)
-    
-
-    def get_count_all_documents(self):        
-        res = self.es_client.count(index="adults")
-
-        return res["count"]
     
 
     def get_attribute_min_max(self, attr_name: str) -> Tuple[int,int]:
