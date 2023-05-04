@@ -83,7 +83,7 @@ class EsConnector(MondrianAPI):
                     if not covered_node.children:
                         leaf_values.append(covered_node.value)
 
-                must.append({"terms": {f"{attr_name}": leaf_values}})
+                must.append({"terms": {f"{attr_name}.keyword": leaf_values}})
             else:
                 range_min_and_max = attributes[attr_name].gen_value.split(',')
                 # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
