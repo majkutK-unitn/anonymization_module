@@ -1,4 +1,5 @@
 from typing import Tuple
+from models.attribute import Attribute
 from models.gentree import GenTree
 from models.partition import Partition
 from interfaces.mondrian_api import MondrianAPI
@@ -37,18 +38,18 @@ class EsConnector(MondrianAPI):
         print("Count: %d" % res['count'])
 
 
-    def get_document_count(self, partition: Partition = None):    
+    def get_document_count(self, attributes: dict[str, Attribute] = None):    
         query = None
         
-        if partition is not None:
-            query = self.map_partition_to_query(partition)
+        if attributes is not None:
+            query = self.get_attribute_min_max(attributes)
 
         res = self.es_client.count(index="adults", body={"query": query})
 
         return res["count"]
 
 
-    def get_median(self, partition: Partition, attr_name: str) -> Tuple[str, str, str, str]:
+    def get_median(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[str, str, str, str]:
         """ Find the middle of the partition
 
         Returns
@@ -56,8 +57,8 @@ class EsConnector(MondrianAPI):
         (str, str, str, str) > (median, value_after_median, min, max)
         """
         
-        query = self.map_partition_to_query(partition)
-        num_of_docs_in_partition = self.get_document_count(partition)
+        query = self.get_attribute_min_max(attributes)
+        num_of_docs_in_partition = self.get_document_count(attributes)
         # At what percentage of the dataset is the value right after the median?
         percentile_for_value_after_median = (((num_of_docs_in_partition * 0.5) + 1) / num_of_docs_in_partition) * 100        
 
@@ -106,10 +107,10 @@ class EsConnector(MondrianAPI):
 
     
 
-    def map_partition_to_query(self, partition: Partition):
+    def map_attributes_to_query(self, attributes: dict[str, Attribute]):
         filter = []
 
-        for attr_name in partition.attributes.keys():
+        for attr_name in attributes.keys():
             node_or_range = Partition.attr_dict[attr_name]
 
             if isinstance(node_or_range, GenTree):
@@ -120,7 +121,7 @@ class EsConnector(MondrianAPI):
                 #for leaf_node_value in node_or_range.covered_nodes.keys():                    
                 #    filter.append({"term": {attr_name: leaf_node_value}})
             else:
-                range_min_and_max = partition.attributes[attr_name].gen_value.split(',')
+                range_min_and_max = attributes[attr_name].gen_value.split(',')
                 # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
                 if len(range_min_and_max) <= 1:                    
                     filter.append({"term": {attr_name: range_min_and_max}})                    
