@@ -66,15 +66,21 @@ class EsConnector(MondrianAPI):
         return self.count(query)
     
 
+    def get_count_all_documents(self):        
+        res = self.es_client.count(index="adults")
+
+        return res["count"]
+    
+
     def get_attribute_min_max(self, attr_name: str) -> Tuple[int,int]:
         aggs = {            
             f"{attr_name}_min": { "min": { "field": attr_name } },
             f"{attr_name}_max": { "max": { "field": attr_name } },
         }
 
-        res = self.es_client.search(index=self.INDEX_NAME, size=0, aggs=aggs)["aggregations"]
+        res = self.es_client.search(index=self.INDEX_NAME, size=0, aggs=aggs)
 
-        return res["age_min"]['value'], res["age_max"]['value']
+        return res["aggregations"]["age_min"]['value'], res["aggregations"]["age_max"]['value']
     
 
     
