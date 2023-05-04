@@ -14,4 +14,4 @@ class NumRange(object):
         self.value = f'{min},{max}'
 
     def __len__(self):
-        return self.range
+        return int(self.range)
