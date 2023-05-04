@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from algorithms.mondrian.models.partition import Partition
+from models.partition import Partition
 from interfaces.abstract_api import AbstractAPI
 
 
