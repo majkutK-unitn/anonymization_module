@@ -107,32 +107,32 @@ class EsConnector(MondrianAPI):
     
 
     def map_partition_to_query(self, partition: Partition):
-        filter = {
-            "term": {},
-            "range": {}
-        }
+        filter = []
 
         for attr_name in partition.attributes.keys():
             node_or_range = Partition.attr_dict[attr_name]
 
             if isinstance(node_or_range, GenTree):
-                for leaf_node_value in node_or_range.covered_nodes.keys():
-                    filter['term'][attr_name] = leaf_node_value
+                # TODO: 
+                #   (1) the covered_values list also contains the intermediate node values that are not needed as part of the query
+                #   (2) simply putting all the values into a new term links them through ANDs in the query, thus it will have no results. Use should instead of filter
+                pass
+                #for leaf_node_value in node_or_range.covered_nodes.keys():                    
+                #    filter.append({"term": {attr_name: leaf_node_value}})
             else:
-                range_min_and_max = node_or_range.value.split(',')
+                range_min_and_max = partition.attributes[attr_name].gen_value.split(',')
                 # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
-                if len(range_min_and_max) <= 1:
-                    filter['term'][attr_name] = range_min_and_max
+                if len(range_min_and_max) <= 1:                    
+                    filter.append({"term": {attr_name: range_min_and_max}})                    
                 else:
-                    filter['range'][attr_name] = {
-                        "gte": range_min_and_max[0],
-                        "lte": range_min_and_max[1]
-                    }                    
-
+                    filter.append({"range": {
+                        attr_name: {
+                            "gte": range_min_and_max[0],
+                            "lte": range_min_and_max[1]
+                            }}})
         return {
-            "query": {
-                "bool": {
-                    "filter": filter
-                }                
-            }
+            "bool": {
+                "filter": filter
+            }    
         }
+        
