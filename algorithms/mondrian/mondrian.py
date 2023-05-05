@@ -78,11 +78,11 @@ def split_numerical_value(numeric_value: str, value_to_split_at: int) -> Tuple[s
         if min == value_to_split_at:
             l_range = min
         else:
-            l_range = min + ',' + value_to_split_at
+            l_range = f"{min_value},{value_to_split_at}"
         if max == value_to_split_at:
             r_range = max
         else:
-            r_range = value_to_split_at + ',' + max
+            r_range = f"{value_to_split_at},{max_value}"
             
         return l_range, r_range
 
@@ -99,7 +99,7 @@ def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Parti
     if min_value == max_value:
         partition.attributes[qid_name].gen_value = min_value
     else:
-        partition.attributes[qid_name].gen_value = min_value + ',' + max_value
+        partition.attributes[qid_name].gen_value = f"{min_value},{max_value}"
 
     partition.attributes[qid_name].width = max_value - min_value
 
