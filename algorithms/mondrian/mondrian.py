@@ -169,11 +169,12 @@ def split_partition(partition: Partition, qid_name: str):
 def check_splitable(partition: Partition):
     """ Check if the partition can be further split while satisfying k-anonymity """
 
-    # If the sum of all the boolean values are False, i.e. if neither of the attributes is splittable, the sum returns 0, which evaluate to False
+    # The sum of all the boolean values is True, if any of the attributes is splittable
     if sum(map(lambda part: part.split_allowed, partition.attributes.values())):
-        return False
+        return True
+        
+    return False
     
-    return True
 
 
 def anonymize(partition: Partition):
