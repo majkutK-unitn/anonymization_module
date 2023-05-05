@@ -129,7 +129,7 @@ def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Parti
 def split_categorical_attribute(partition: Partition, qid_name: str) -> list[Partition]:
     """ Split categorical attribute using generalization hierarchy """
 
-    node_to_split_at: GenTree = Partition.attr_dict[qid_name][partition.attributes[qid_name].gen_value]
+    node_to_split_at: GenTree = Partition.attr_dict[qid_name].node(partition.attributes[qid_name].gen_value)
 
     # If the node (has no children, and thus) is a leaf, the partitioning is not possible
     if not len(node_to_split_at.children):
