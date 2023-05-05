@@ -1,71 +1,67 @@
 import pdb
 import time
 
-from typing import Tuple, List
+from typing import Tuple
 
+from models.attribute import Attribute
 from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
+
 from db_connectors.ec_connector import EsConnector
 
-# TODO: comment all dicts to have a clear understanding of what the keys and what the values are
 
 __DEBUG = False
-NUM_OF_QIDS_USED = 10
+
 GLOBAL_K = 0
-FINAL_PARTITIONS: List[Partition] = []
-ATTR_TREES: list[NumRange | dict[str, GenTree]] = []
-MAX_RANGE_PER_QID = []
+FINAL_PARTITIONS: list[Partition] = []
 
 ES_CONNECTOR = EsConnector()
 
 
-def get_normalized_width(partition: Partition, qid_index: int) -> float:    
+def get_normalized_width(partition: Partition, qid_name: str) -> float:    
     """ Return Normalized width of partition """        
 
-    return partition.attr_width_list[qid_index] * 1.0 / MAX_RANGE_PER_QID[qid_index]
+    return partition.attributes[qid_name].width * 1.0 / len(Partition.attr_dict[qid_name])
 
 
-def choose_qid(partition: Partition) -> int:
+def choose_qid_name(partition: Partition) -> str:
     """ Choose QID with largest normlized width and return its index. """
 
     max_norm_width = -1
-    qid_index = -1
+    qid_name: str = None
 
-    for i in range(NUM_OF_QIDS_USED):        
-        if partition.attr_split_allowed_list[i] == 0:
-            continue
+    for attr_name in partition.attributes.keys():
+        if partition.attributes[attr_name].split_allowed:
+            normalized_width = get_normalized_width(partition, attr_name)
         
-        normalized_width = get_normalized_width(partition, i)
-        
-        if normalized_width > max_norm_width:
-            max_norm_width = normalized_width
-            qid_index = i
+            if normalized_width > max_norm_width:
+                max_norm_width = normalized_width
+                qid_name = attr_name
 
     if max_norm_width > 1:
         print("Error: max_norm_width > 1")
         pdb.set_trace()
-    if qid_index == -1:
-        print("cannot find the max qid_index")
-        pdb.set_trace()
 
-    return qid_index
+    return qid_name
 
 
-def get_median(partition: Partition, qid_index: int) -> Tuple[str, str, str, str]:
+def get_median(partition: Partition, qid_name: str) -> Tuple[str, str, str, str]:
     """ Find the middle of the partition
 
     Returns
     -------
     (str, str, str, str)
-        unique_value_to_split_at: the median
-        next_unique_value: the unique value right after the median
-        unique_values[0]
-        unique_values[-1]
+        unique_value_to_split_at            the median
+        next_unique_value                   the unique value right after the median
+        min
+        max
     """
 
+    (unique_value_to_split_at, next_unique_value) = ES_CONNECTOR.get_attribute_median_and_next_value(partition.attributes, qid_name)
+    (min_value, max_value) = ES_CONNECTOR.get_attribute_min_max(partition.attributes, qid_name)
     
-    return ES_CONNECTOR.get_median(partition, qid_index)
+    return (unique_value_to_split_at, next_unique_value, min_value, max_value)
 
 
 def split_numerical_value(numeric_value: str, value_to_split_at: int) -> Tuple[str, str] | str:
@@ -91,102 +87,90 @@ def split_numerical_value(numeric_value: str, value_to_split_at: int) -> Tuple[s
         return l_range, r_range
 
 
-def split_numerical_attribute(partition: Partition, qid_index: int) -> list[Partition]:
+def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Partition]:
     """ Split numeric attribute by along the median, creating two new sub-partitions """
 
-    sub_partitions: List[Partition] = []
+    sub_partitions: list[Partition] = []
 
-    (unique_value_to_split_at, next_unique_value, min_unique_value, max_unique_value) = get_median(partition, qid_index)
+    (unique_value_to_split_at, next_unique_value, min_value, max_value) = ES_CONNECTOR.get_median(partition, qid_name)
 
     # This if-else seems unnecessary already handled in init and then in each iteration through the parts below of this function
-    if min_unique_value == max_unique_value:
-        partition.attr_gen_list[qid_index] = min_unique_value
+    if min_value == max_value:
+        partition.attributes[qid_name].gen_value = min_value
     else:
-        partition.attr_gen_list[qid_index] = min_unique_value + ',' + max_unique_value
+        partition.attributes[qid_name].gen_value = min_value + ',' + max_value
 
-    partition.attr_width_list[qid_index] = max_unique_value - min_unique_value
+    partition.attributes[qid_name].width = max_value - min_value
 
     if unique_value_to_split_at == '' or unique_value_to_split_at == next_unique_value:        
         return []
 
-    # Copy the current state of the generalization into the new partitions
-    l_attr_gen_list = partition.attr_gen_list[:]
-    r_attr_gen_list = partition.attr_gen_list[:]
+    l_attributes = partition.attributes[:]
+    r_attributes = partition.attributes[:]
 
-    l_attr_gen_list[qid_index], r_attr_gen_list[qid_index] = split_numerical_value(partition.attr_gen_list[qid_index], unique_value_to_split_at)        
+    (l_gen_value, r_gen_value) = split_numerical_value(partition.attributes[qid_name].gen_value, unique_value_to_split_at)
+    
+    l_width = unique_value_to_split_at - min_value    
+    r_width = max_value - next_unique_value
 
-    # The normalized width of all attributes remain the same in the two newly created partitions, except for the one along which we execute the split
-    l_attr_width_list = partition.attr_width_list[:]
-    r_attr_width_list = partition.attr_width_list[:]
+    l_attributes[qid_name] = Attribute(l_width, l_gen_value)
+    r_attributes[qid_name] = Attribute(r_width, r_gen_value)
 
-    # The width of the new, "left" partition is composed of the minimum of the original range and the median value    
-    l_attr_width_list[qid_index] = unique_value_to_split_at - min_unique_value
-    # The width of the new, "right" partition is composed of the next value after the median value we used and the maximal value of the range    
-    r_attr_width_list[qid_index] = max_unique_value - next_unique_value
+    l_count = ES_CONNECTOR.get_document_count(l_attributes)
+    r_count = ES_CONNECTOR.get_document_count(r_attributes)
 
-    # TODO: write the query for counting the items in the new subpartitions
-    l_count = ES_CONNECTOR.count()
-    r_count = ES_CONNECTOR.count()
-
-    sub_partitions.append(Partition(l_count, l_attr_width_list, l_attr_gen_list, NUM_OF_QIDS_USED))
-    sub_partitions.append(Partition(r_count, r_attr_width_list, r_attr_gen_list, NUM_OF_QIDS_USED))
+    sub_partitions.append(Partition(l_count, l_attributes))
+    sub_partitions.append(Partition(r_count, r_attributes))
 
     return sub_partitions
 
 
-def split_categorical_attribute(partition: Partition, qid_index: int) -> list[Partition]:
+def split_categorical_attribute(partition: Partition, qid_name: str) -> list[Partition]:
     """ Split categorical attribute using generalization hierarchy """
-    
-    node_to_split_at = ATTR_TREES[qid_index][partition.attr_gen_list[qid_index]]
-    child_nodes = node_to_split_at.children[:]
+
+    node_to_split_at: GenTree = Partition.attr_dict[qid_name][partition.attributes[qid_name].gen_value]
 
     # If the node (has no children, and thus) is a leaf, the partitioning is not possible
-    if(len(child_nodes) == 0):
+    if not len(node_to_split_at.children):
         return []
     
     sub_partitions: List[Partition] = []
 
-    for node in child_nodes:        
-        count_of_covered_by_node = ES_CONNECTOR.get_number_of_nodes_covered(partition, qid_index, node.covered_nodes.values())
+    for child in node_to_split_at.children:
+        generalized_attrs = partition.attributes[:]
+        generalized_attrs[qid_name] = Attribute(len(child), child.value)
+
+        count_covered_by_child = ES_CONNECTOR.get_document_count(generalized_attrs, qid_name)
         
-        if count_of_covered_by_node == 0:
+        if count_covered_by_child == 0:
             continue
 
-        if count_of_covered_by_node < GLOBAL_K:
+        if count_covered_by_child < GLOBAL_K:
             return []
         
-        new_attr_width_list = partition.attr_width_list[:]            
-        new_attr_gen_list = partition.attr_gen_list[:]
-
-        # For categorical attributes, the width of the attribute equals the number of children
-        new_attr_width_list[qid_index] = len(node)
-        # The generalized value of the attribute is the node value
-        new_attr_gen_list[qid_index] = node.value
-
-        sub_partitions.append(Partition(count_of_covered_by_node, new_attr_width_list, new_attr_gen_list, NUM_OF_QIDS_USED))
+        sub_partitions.append(Partition(count_covered_by_child, generalized_attrs))
 
     if sum(sub_p.count for sub_p in sub_partitions) != partition.count:
-        # TODO: add more details to the exception
-        raise Exception("Generalization hierarchy error!")        
+        print("Generalization hierarchy error!")
+        pdb.set_trace()
     
     return sub_partitions
 
 
-
-def split_partition(partition: Partition, qid_index: int):
+def split_partition(partition: Partition, qid_name: str):
     """ Split partition and distribute records to different sub-partitions """
 
-    if Partition.is_qid_categorical[qid_index] is False:
-        return split_numerical_attribute(partition, qid_index)
+    if isinstance(Partition.attr_dict[qid_name], NumRange):
+        return split_numerical_attribute(partition, qid_name)
     else:
-        return split_categorical_attribute(partition, qid_index)
+        return split_categorical_attribute(partition, qid_name)
     
 
 def check_splitable(partition: Partition):
     """ Check if the partition can be further split while satisfying k-anonymity """
 
-    # If the sum is 0, it means that the allow array only contains 0s, that is no attributes is splittable any more
-    if sum(partition.attr_split_allowed_list) == 0:
+    # If the sum of all the boolean values are False, i.e. if neither of the attributes is splittable, the sum returns 0, which evaluate to False
+    if sum(map(lambda part: part.split_allowed, partition.attributes.values())):
         return False
     
     return True
@@ -200,44 +184,54 @@ def anonymize(partition: Partition):
         FINAL_PARTITIONS.append(partition)
         return
     
-    qid_index = choose_qid(partition)
-    if qid_index == -1:
-        print("Error: qid_index=-1")
+    qid_name = choose_qid_name(partition)
+
+    if qid_name == None:
+        print("Error: qid_name = None")
         pdb.set_trace()
 
-    sub_partitions = split_partition(partition, qid_index)
+    sub_partitions = split_partition(partition, qid_name)
     if len(sub_partitions) == 0:
         # Close the attribute for this partition, as it cannot be split any more
-        partition.attr_split_allowed_list[qid_index] = 0
+        partition.attributes[qid_name].split_allowed = False
         anonymize(partition)
     else:
         for sub_p in sub_partitions:
             anonymize(sub_p)
 
 
-def init(attr_tree: list[NumRange | dict[str, GenTree]], k: int):
+def init(gen_hiers: dict[str, GenTree], qid_names: list[str], k: int):
     """ Reset all global variables """
 
     # To change the value of a global variable inside a function, refer to the variable by using the global keyword:
-    global GLOBAL_K, FINAL_PARTITIONS, ATTR_TREES, MAX_RANGE_PER_QID
-    ATTR_TREES = attr_tree
+    global GLOBAL_K, FINAL_PARTITIONS    
     GLOBAL_K = k
     FINAL_PARTITIONS = []
-    MAX_RANGE_PER_QID = []
 
-    # Based on the received attribute tree, map the attributes into a boolean array that reflects if they are categorical or not
-    for tree in attr_tree:
-        if isinstance(tree, NumRange):
-            Partition.is_qid_categorical.append(False)
-        else:
-            Partition.is_qid_categorical.append(True)    
+    attributes: dict[str, Attribute] = {}
+    gen_hiers_and_num_ranges: dict[str, NumRange|GenTree] = gen_hiers
+    
+    for attr_name in qid_names:
+        root_node_or_num_range: NumRange | GenTree
+
+        if attr_name in gen_hiers:
+            root_node_or_num_range = gen_hiers[attr_name]            
+        else:            
+            (min, max) = ES_CONNECTOR.get_attribute_min_max(attr_name)
+            root_node_or_num_range = NumRange(min, max)
+            gen_hiers_and_num_ranges[attr_name] = root_node_or_num_range
+        
+        attributes[attr_name] = Attribute(len(root_node_or_num_range), root_node_or_num_range.value)
+    
+    count = ES_CONNECTOR.get_document_count()
+    whole_partition = Partition(count, attributes)
+
+    Partition.attr_dict = gen_hiers_and_num_ranges
+    
+    return whole_partition
     
 
-# DATA_REQ_EZ: number of qids 
-#   - pass to init
-#   - pass to whole_partition on initalization
-#   - number of records through -> len(data)
-def mondrian(attr_tree: list[GenTree | NumRange], k: int):
+def mondrian(gen_hiers: dict[str, GenTree], qid_names: list[str], k: int):
     """
     Basic Mondrian for k-anonymity.
     This fuction support both numeric values and categoric values.
@@ -246,46 +240,31 @@ def mondrian(attr_tree: list[GenTree | NumRange], k: int):
     The final result is returned in 2-dimensional list.
     """
 
-    init(attr_tree, k)
-    
-    attr_gen_list = []
-    attr_width_list = []
-
-    # TODO: feed in the NUM_OF_QIDS_USED
-    for i in range(NUM_OF_QIDS_USED):
-        if Partition.is_qid_categorical[i] is False:            
-            MAX_RANGE_PER_QID.append(ATTR_TREES[i].range)
-            attr_width_list.append(ATTR_TREES[i].range)
-            attr_gen_list.append(ATTR_TREES[i].value)
-        else:
-            MAX_RANGE_PER_QID.append(len(ATTR_TREES[i]['*']))
-            attr_width_list.append(len(ATTR_TREES[i]['*']))
-            attr_gen_list.append('*')
-
-    # TODO: write the query for counting all the documents
-    count = ES_CONNECTOR.count()
-    whole_partition = Partition(count, attr_width_list, attr_gen_list, NUM_OF_QIDS_USED)
+    whole_partition = init(gen_hiers, qid_names, k)   
     
     start_time = time.time()
+
     anonymize(whole_partition)
 
+
+    # Post-processing
     rtime = float(time.time() - start_time)
     ncp = 0.0
 
     for partition in FINAL_PARTITIONS:
         r_ncp = 0.0
-        for i in range(NUM_OF_QIDS_USED):
-            r_ncp += get_normalized_width(partition, i)
+        for attr_name in qid_names:
+            r_ncp += get_normalized_width(partition, attr_name)
 
         r_ncp *= len(partition)
         ncp += r_ncp
 
     # covert to NCP percentage
-    ncp /= NUM_OF_QIDS_USED
-    ncp /= len(data)
+    ncp /= len(qid_names)
+    ncp /= whole_partition.count
     ncp *= 100
 
-    if len(FINAL_PARTITIONS) != count:
+    if sum(map(lambda partition: partition.count, FINAL_PARTITIONS)) != whole_partition.count:
         print("Losing records during anonymization!!")
         pdb.set_trace()
 
