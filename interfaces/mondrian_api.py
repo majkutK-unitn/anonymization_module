@@ -13,7 +13,7 @@ class MondrianAPI(AbstractAPI):
         pass
 
     @abstractmethod
-    def get_document_count(self, attributes: dict[str, Attribute] = None) -> int:
+    def get_document_count(self, attributes: dict[str, Attribute]) -> int:
         pass        
 
     @abstractmethod
@@ -21,5 +21,5 @@ class MondrianAPI(AbstractAPI):
         pass
 
     @abstractmethod
-    def get_attribute_min_max(self, attr_name: str) -> Tuple[int,int]:
+    def get_attribute_min_max(self, attr_name: str, attributes: dict[str, Attribute]) -> Tuple[int,int]:
         pass
