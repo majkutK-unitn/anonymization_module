@@ -55,12 +55,12 @@ def split_numerical_value(numeric_value: str, value_to_split_at: int) -> Tuple[s
         min_value = int(range_min_and_max[0])
         max_value = int(range_min_and_max[1])
         # Create two new partitions using the [mix, value_to_split_at] and [value_to_split_at, max] new ranges
-        if min == value_to_split_at:
-            l_range = min
+        if min_value == value_to_split_at:
+            l_range = min_value
         else:
             l_range = f"{min_value},{value_to_split_at}"
-        if max == value_to_split_at:
-            r_range = max
+        if max_value == value_to_split_at:
+            r_range = max_value
         else:
             r_range = f"{value_to_split_at},{max_value}"
             
