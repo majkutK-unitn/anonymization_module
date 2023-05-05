@@ -9,7 +9,10 @@ from models.gentree import GenTree
 from models.partition import Partition
 from interfaces.mondrian_api import MondrianAPI
 
-
+# TODO:
+#   (1) implement push_ecs()
+#   (2) refactor map_attributes_to_query
+#   (3) remove the int() casts so that the project can handle floats as well (with the adult dataset we only need ints)
 class EsConnector(MondrianAPI):
 
     def __init__(self):
@@ -28,7 +31,7 @@ class EsConnector(MondrianAPI):
         pass
 
 
-    def get_document_count(self, attributes: dict[str, Attribute] = None):    
+    def get_document_count(self, attributes: dict[str, Attribute] = None) -> int:    
         query = None
         
         if attributes is not None:
@@ -36,7 +39,7 @@ class EsConnector(MondrianAPI):
 
         res = self.es_client.count(index="adults", body=query)
 
-        return res["count"]
+        return int(res["count"])
     
     
     def get_attribute_min_max(self, attr_name: str, attributes: dict[str, Attribute] = None) -> Tuple[int,int]:
@@ -52,10 +55,10 @@ class EsConnector(MondrianAPI):
 
         res = self.es_client.search(index=self.INDEX_NAME, size=0, query=query, aggs=aggs)
 
-        return res["aggregations"][f"{attr_name}_min"]['value'], res["aggregations"][f"{attr_name}_max"]['value']
+        return int(res["aggregations"][f"{attr_name}_min"]['value']), int(res["aggregations"][f"{attr_name}_max"]['value'])
 
 
-    def get_attribute_median_and_next_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[str, str]:
+    def get_attribute_median_and_next_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[int, int]:
         """ Find the middle of the partition and the next value that follows the median """
         
         query = self.map_attributes_to_query(attributes)
@@ -70,8 +73,8 @@ class EsConnector(MondrianAPI):
 
         res = self.es_client.search(index=self.INDEX_NAME, query=query, size=0, aggs=aggs)
 
-        return list(res["aggregations"][f"{attr_name}_median"]['values'].values())[0], \
-                list(res["aggregations"][f"{attr_name}_value_after_median"]['values'].values())[0]        
+        return int(list(res["aggregations"][f"{attr_name}_median"]['values'].values())[0]), \
+                int(list(res["aggregations"][f"{attr_name}_value_after_median"]['values'].values())[0])
     
 
     def map_attributes_to_query(self, attributes: dict[str, Attribute]):
