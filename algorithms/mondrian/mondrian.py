@@ -100,6 +100,9 @@ def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Parti
     l_count = ES_CONNECTOR.get_document_count(l_attributes)
     r_count = ES_CONNECTOR.get_document_count(r_attributes)
 
+    if l_count < GLOBAL_K or r_count < GLOBAL_K:
+        return []
+
     sub_partitions.append(Partition(l_count, l_attributes))
     sub_partitions.append(Partition(r_count, r_attributes))
 
