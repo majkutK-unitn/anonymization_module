@@ -44,25 +44,7 @@ def choose_qid_name(partition: Partition) -> str:
     return qid_name
 
 
-def get_median(partition: Partition, qid_name: str) -> Tuple[str, str, str, str]:
-    """ Find the middle of the partition
-
-    Returns
-    -------
-    (str, str, str, str)
-        unique_value_to_split_at            the median
-        next_unique_value                   the unique value right after the median
-        min
-        max
-    """
-
-    (unique_value_to_split_at, next_unique_value) = ES_CONNECTOR.get_attribute_median_and_next_value(partition.attributes, qid_name)
-    (min_value, max_value) = ES_CONNECTOR.get_attribute_min_max(partition.attributes, qid_name)
-    
-    return (unique_value_to_split_at, next_unique_value, min_value, max_value)
-
-
-def split_numerical_value(numeric_value: str, value_to_split_at: int) -> Tuple[str, str] | str:
+def split_numerical_value(numeric_value: str, value_to_split_at: int) -> Tuple[str, str]:
     """ Split numeric value along value_to_split_at and return sub ranges """
 
     range_min_and_max = numeric_value.split(',')
