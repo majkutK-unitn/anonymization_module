@@ -37,6 +37,22 @@ class EsConnector(MondrianAPI):
         res = self.es_client.count(index="adults", body=query)
 
         return res["count"]
+    
+    
+    def get_attribute_min_max(self, attr_name: str, attributes: dict[str, Attribute] = None) -> Tuple[int,int]:
+        query = None
+        
+        if attributes is not None:
+            query = self.map_attributes_to_query(attributes)
+
+        aggs = {            
+            f"{attr_name}_min": { "min": { "field": attr_name } },
+            f"{attr_name}_max": { "max": { "field": attr_name } },
+        }
+
+        res = self.es_client.search(index=self.INDEX_NAME, size=0, query=query, aggs=aggs)
+
+        return res["aggregations"][f"{attr_name}_min"]['value'], res["aggregations"][f"{attr_name}_max"]['value']
 
 
     def get_attribute_median_and_next_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[str, str]:
@@ -55,18 +71,7 @@ class EsConnector(MondrianAPI):
         res = self.es_client.search(index=self.INDEX_NAME, query=query, size=0, aggs=aggs)
 
         return list(res["aggregations"][f"{attr_name}_median"]['values'].values())[0], \
-                list(res["aggregations"][f"{attr_name}_value_after_median"]['values'].values())[0]
-    
-
-    def get_attribute_min_max(self, attr_name: str) -> Tuple[int,int]:
-        aggs = {            
-            f"{attr_name}_min": { "min": { "field": attr_name } },
-            f"{attr_name}_max": { "max": { "field": attr_name } },
-        }
-
-        res = self.es_client.search(index=self.INDEX_NAME, size=0, aggs=aggs)
-
-        return res["aggregations"][f"{attr_name}_min"]['value'], res["aggregations"][f"{attr_name}_max"]['value']
+                list(res["aggregations"][f"{attr_name}_value_after_median"]['values'].values())[0]        
     
 
     def map_attributes_to_query(self, attributes: dict[str, Attribute]):
