@@ -1,4 +1,3 @@
-import pdb
 import time
 
 from typing import Tuple
@@ -39,9 +38,8 @@ def choose_qid_name(partition: Partition) -> str:
                 max_norm_width = normalized_width
                 qid_name = attr_name
 
-    if max_norm_width > 1:
-        print("Error: max_norm_width > 1")
-        pdb.set_trace()
+    if max_norm_width > 1:        
+        raise Exception("Max normalized width is greater than 1")
 
     return qid_name
 
@@ -152,8 +150,7 @@ def split_categorical_attribute(partition: Partition, qid_name: str) -> list[Par
         sub_partitions.append(Partition(count_covered_by_child, generalized_attrs))
 
     if sum(sub_p.count for sub_p in sub_partitions) != partition.count:
-        print("Generalization hierarchy error!")
-        pdb.set_trace()
+        raise Exception("The number of items in the subpartitions is not equal to that of the original partition")        
     
     return sub_partitions
 
@@ -189,8 +186,7 @@ def anonymize(partition: Partition):
     qid_name = choose_qid_name(partition)
 
     if qid_name == None:
-        print("Error: qid_name = None")
-        pdb.set_trace()
+        raise Exception("No QID was chosen in the choose_qid_name call")        
 
     sub_partitions = split_partition(partition, qid_name)
     if len(sub_partitions) == 0:
@@ -266,9 +262,8 @@ def mondrian(gen_hiers: dict[str, GenTree], qid_names: list[str], k: int):
     ncp /= whole_partition.count
     ncp *= 100
 
-    if sum(map(lambda partition: partition.count, FINAL_PARTITIONS)) != whole_partition.count:
-        print("Losing records during anonymization!!")
-        pdb.set_trace()
+    if sum(map(lambda partition: partition.count, FINAL_PARTITIONS)) != whole_partition.count:        
+        raise Exception("Losing records during anonymization")
 
     if __DEBUG:
         print("K=%d" % k)
