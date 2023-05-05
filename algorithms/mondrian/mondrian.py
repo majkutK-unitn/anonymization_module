@@ -138,7 +138,7 @@ def split_categorical_attribute(partition: Partition, qid_name: str) -> list[Par
     sub_partitions: list[Partition] = []
 
     for child in node_to_split_at.children:
-        generalized_attrs = partition.attributes[:]
+        generalized_attrs = partition.attributes.copy()
         generalized_attrs[qid_name] = Attribute(len(child), child.value)
 
         count_covered_by_child = ES_CONNECTOR.get_document_count(generalized_attrs, qid_name)
