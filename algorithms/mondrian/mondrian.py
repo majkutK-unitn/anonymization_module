@@ -135,6 +135,15 @@ def split_categorical_attribute(partition: Partition, qid_name: str) -> list[Par
         sub_partitions.append(Partition(count_covered_by_child, generalized_attrs))
 
     if sum(sub_p.count for sub_p in sub_partitions) != partition.count:
+        # TODO: uncover root cause of anomaly
+        #   - splitting along some categorical attributes seems to lose data
+        #   - actually, the original partition count seems to be flawed
+        #       - might be caused by overlapping ECS
+        #       - the query, generated at this point from the original partition attributes, gives a different count
+        #           - with this count, the subpartition counts are consistent
+        #       BUT at the end of the algorithm there is indeed more than 5000 documents lost if summing up the final partition counts        
+        #           - might be caused by the currently flawed way of splitting numerical attributes
+        #           - might be caused by some anomaly in the original assignment of the count when creating the partition
         raise Exception("The number of items in the subpartitions is not equal to that of the original partition")        
     
     return sub_partitions
