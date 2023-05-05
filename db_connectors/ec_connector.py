@@ -58,23 +58,38 @@ class EsConnector(MondrianAPI):
         return int(res["aggregations"][f"{attr_name}_min"]['value']), int(res["aggregations"][f"{attr_name}_max"]['value'])
 
 
-    def get_attribute_median_and_next_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[int, int]:
-        """ Find the middle of the partition and the next value that follows the median """
+    def get_attribute_median_and_next_unique_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[int, int]:
+        """ Find the middle of the partition and the next unique value that follows the median """
         
-        query = self.map_attributes_to_query(attributes)
-        num_of_docs_in_partition = self.get_document_count(attributes)
-        # At what percentage of the dataset is the value right after the median?
-        percentile_for_value_after_median = (((num_of_docs_in_partition * 0.5) + 1) / num_of_docs_in_partition) * 100
+        median_query = self.map_attributes_to_query(attributes)        
 
-        aggs = {            
-            f"{attr_name}_median": { "percentiles": { "field": attr_name, "percents": [ 50 ] }},
-            f"{attr_name}_value_after_median": { "percentiles": { "field": attr_name, "percents": [ percentile_for_value_after_median ] }},            
+        median_aggs = {            
+            f"{attr_name}_median": { "percentiles": { "field": attr_name, "percents": [ 50 ] }},            
         }
 
-        res = self.es_client.search(index=self.INDEX_NAME, query=query, size=0, aggs=aggs)
+        median_res = self.es_client.search(index=self.INDEX_NAME, query=median_query, size=0, aggs=median_aggs)
 
-        return int(list(res["aggregations"][f"{attr_name}_median"]['values'].values())[0]), \
-                int(list(res["aggregations"][f"{attr_name}_value_after_median"]['values'].values())[0])
+        if list(median_res["aggregations"][f"{attr_name}_median"]['values'].values())[0] is None:
+            return None, None
+
+        median = int(list(median_res["aggregations"][f"{attr_name}_median"]['values'].values())[0])
+
+        next_unique_query = median_query.copy()
+        next_unique_query["bool"]["must"].append({"range": {
+                        attr_name: {
+                            "gt": median
+                            }}
+        })
+
+        next_unique_aggs = {            
+            f"{attr_name}_min_in_partition": { "min": { "field": attr_name } },            
+        }
+
+        next_unique_res = self.es_client.search(index=self.INDEX_NAME, query=next_unique_query, size=0, aggs=next_unique_aggs)
+
+        next_unique = None if next_unique_res["aggregations"][f"{attr_name}_min_in_partition"]['value'] is None else int(next_unique_res["aggregations"][f"{attr_name}_min_in_partition"]['value'])
+
+        return median, next_unique
     
 
     def map_attributes_to_query(self, attributes: dict[str, Attribute]):
@@ -96,7 +111,7 @@ class EsConnector(MondrianAPI):
                 range_min_and_max = attributes[attr_name].gen_value.split(',')
                 # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
                 if len(range_min_and_max) <= 1:                    
-                    must.append({"term": {attr_name: range_min_and_max}})                    
+                    must.append({"term": {attr_name: range_min_and_max[0]}})                    
                 else:
                     must.append({"range": {
                         attr_name: {

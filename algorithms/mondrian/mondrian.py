@@ -72,7 +72,7 @@ def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Parti
 
     sub_partitions: list[Partition] = []
     
-    (unique_value_to_split_at, next_unique_value) = ES_CONNECTOR.get_attribute_median_and_next_value(partition.attributes, qid_name)
+    (median, next_unique_value) = ES_CONNECTOR.get_attribute_median_and_next_unique_value(partition.attributes, qid_name)
     (min_value, max_value) = ES_CONNECTOR.get_attribute_min_max(qid_name, partition.attributes)
 
     # This if-else seems unnecessary already handled in init and then in each iteration through the parts below of this function
@@ -83,15 +83,15 @@ def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Parti
 
     partition.attributes[qid_name].width = max_value - min_value
 
-    if unique_value_to_split_at == '' or unique_value_to_split_at == next_unique_value:        
+    if median is None or next_unique_value is None:
         return []
 
     l_attributes = partition.attributes[:]
     r_attributes = partition.attributes[:]
 
-    (l_gen_value, r_gen_value) = split_numerical_value(partition.attributes[qid_name].gen_value, unique_value_to_split_at)
+    (l_gen_value, r_gen_value) = split_numerical_value(partition.attributes[qid_name].gen_value, median)
     
-    l_width = unique_value_to_split_at - min_value    
+    l_width = median - min_value    
     r_width = max_value - next_unique_value
 
     l_attributes[qid_name] = Attribute(l_width, l_gen_value)

@@ -17,7 +17,7 @@ class MondrianAPI(AbstractAPI):
         pass        
 
     @abstractmethod
-    def get_attribute_median_and_next_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[str, str]:
+    def get_attribute_median_and_next_unique_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[int, int]:
         pass
 
     @abstractmethod
