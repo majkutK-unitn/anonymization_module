@@ -135,7 +135,7 @@ def split_categorical_attribute(partition: Partition, qid_name: str) -> list[Par
     if not len(node_to_split_at.children):
         return []
     
-    sub_partitions: List[Partition] = []
+    sub_partitions: list[Partition] = []
 
     for child in node_to_split_at.children:
         generalized_attrs = partition.attributes[:]
