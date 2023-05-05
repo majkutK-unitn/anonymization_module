@@ -91,8 +91,9 @@ def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Parti
     """ Split numeric attribute by along the median, creating two new sub-partitions """
 
     sub_partitions: list[Partition] = []
-
-    (unique_value_to_split_at, next_unique_value, min_value, max_value) = ES_CONNECTOR.get_median(partition, qid_name)
+    
+    (unique_value_to_split_at, next_unique_value) = ES_CONNECTOR.get_attribute_median_and_next_value(partition.attributes, qid_name)
+    (min_value, max_value) = ES_CONNECTOR.get_attribute_min_max(qid_name, partition.attributes)
 
     # This if-else seems unnecessary already handled in init and then in each iteration through the parts below of this function
     if min_value == max_value:
