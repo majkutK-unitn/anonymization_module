@@ -77,7 +77,7 @@ def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Parti
 
     # This if-else seems unnecessary already handled in init and then in each iteration through the parts below of this function
     if min_value == max_value:
-        partition.attributes[qid_name].gen_value = min_value
+        partition.attributes[qid_name].gen_value = str(min_value)
     else:
         partition.attributes[qid_name].gen_value = f"{min_value},{max_value}"
 
