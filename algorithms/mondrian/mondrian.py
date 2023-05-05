@@ -86,8 +86,8 @@ def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Parti
     if median is None or next_unique_value is None:
         return []
 
-    l_attributes = partition.attributes[:]
-    r_attributes = partition.attributes[:]
+    l_attributes = partition.attributes.copy()
+    r_attributes = partition.attributes.copy()
 
     (l_gen_value, r_gen_value) = split_numerical_value(partition.attributes[qid_name].gen_value, median)
     
