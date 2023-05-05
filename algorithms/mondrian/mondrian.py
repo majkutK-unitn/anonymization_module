@@ -139,7 +139,7 @@ def split_categorical_attribute(partition: Partition, qid_name: str) -> list[Par
         generalized_attrs = partition.attributes.copy()
         generalized_attrs[qid_name] = Attribute(len(child), child.value)
 
-        count_covered_by_child = ES_CONNECTOR.get_document_count(generalized_attrs, qid_name)
+        count_covered_by_child = ES_CONNECTOR.get_document_count(generalized_attrs)
         
         if count_covered_by_child == 0:
             continue
