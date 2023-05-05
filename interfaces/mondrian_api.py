@@ -1,6 +1,10 @@
+from abc import abstractmethod
+
 from typing import Tuple
 
+from models.attribute import Attribute
 from models.partition import Partition
+
 from interfaces.abstract_api import AbstractAPI
 
 
@@ -8,11 +12,14 @@ class MondrianAPI(AbstractAPI):
     def __init__(self):
         pass
 
-    def get_median(self, partition: Partition, qid_index: int) -> Tuple[str, str, str, str]:
+    @abstractmethod
+    def get_document_count(self, attributes: dict[str, Attribute] = None) -> int:
+        pass        
+
+    @abstractmethod
+    def get_attribute_median_and_next_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[str, str]:
         pass
 
-    def get_number_of_nodes_covered(self, partition: Partition, qid_index: int, values: list[str]):
-        pass
-
-    def check_ec_validity(self, partition_candidate) -> bool:
+    @abstractmethod
+    def get_attribute_min_max(self, attr_name: str) -> Tuple[int,int]:
         pass
