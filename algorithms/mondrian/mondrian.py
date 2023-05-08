@@ -75,13 +75,17 @@ def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Parti
     (median, next_unique_value) = ES_CONNECTOR.get_attribute_median_and_next_unique_value(partition.attributes, qid_name)
     (min_value, max_value) = ES_CONNECTOR.get_attribute_min_max(qid_name, partition.attributes)
 
-    # This if-else seems unnecessary already handled in init and then in each iteration through the parts below of this function
-    if min_value == max_value:
-        partition.attributes[qid_name].gen_value = str(min_value)
-    else:
-        partition.attributes[qid_name].gen_value = f"{min_value},{max_value}"
+    # As cuts along other dimensions are done, the min-max of the partition along other dimensions migth change and needs to be updated
+    updated_width = max_value - min_value
+    updated_gen_value: str
 
-    partition.attributes[qid_name].width = max_value - min_value
+    if min_value == max_value:
+        updated_gen_value = str(min_value)
+    else:
+        updated_gen_value = f"{min_value},{max_value}"
+
+    # The same Attribute object should not be directly manipulated, as other Partitions might also rely on it. A fresh one must be created.
+    partition.attributes[qid_name] = Attribute(updated_width, updated_gen_value)
 
     if median is None or next_unique_value is None:
         return []
@@ -134,16 +138,7 @@ def split_categorical_attribute(partition: Partition, qid_name: str) -> list[Par
         
         sub_partitions.append(Partition(count_covered_by_child, generalized_attrs))
 
-    if sum(sub_p.count for sub_p in sub_partitions) != partition.count:
-        # TODO: uncover root cause of anomaly
-        #   - splitting along some categorical attributes seems to lose data
-        #   - actually, the original partition count seems to be flawed
-        #       - might be caused by overlapping ECS
-        #       - the query, generated at this point from the original partition attributes, gives a different count
-        #           - with this count, the subpartition counts are consistent
-        #       BUT at the end of the algorithm there is indeed more than 5000 documents lost if summing up the final partition counts        
-        #           - might be caused by the currently flawed way of splitting numerical attributes
-        #           - might be caused by some anomaly in the original assignment of the count when creating the partition
+    if sum(sub_p.count for sub_p in sub_partitions) != partition.count:        
         raise Exception("The number of items in the subpartitions is not equal to that of the original partition")        
     
     return sub_partitions
@@ -185,7 +180,8 @@ def anonymize(partition: Partition):
     sub_partitions = split_partition(partition, qid_name)
     if len(sub_partitions) == 0:
         # Close the attribute for this partition, as it cannot be split any more
-        partition.attributes[qid_name].split_allowed = False
+        # The same Attribute object should not be directly manipulated, as other Partitions might also rely on it. A fresh one must be created.
+        partition.attributes[qid_name] = Attribute(partition.attributes[qid_name].width, partition.attributes[qid_name].gen_value, False)
         anonymize(partition)
     else:
         for sub_p in sub_partitions:
