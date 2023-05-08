@@ -248,7 +248,7 @@ def mondrian(gen_hiers: dict[str, GenTree], qid_names: list[str], k: int):
         for attr_name in qid_names:
             r_ncp += get_normalized_width(partition, attr_name)
 
-        r_ncp *= len(partition)
+        r_ncp *= partition.count
         ncp += r_ncp
 
     # covert to NCP percentage
@@ -263,7 +263,7 @@ def mondrian(gen_hiers: dict[str, GenTree], qid_names: list[str], k: int):
         print("K=%d" % k)
         print("size of partitions")
         print(len(FINAL_PARTITIONS))
-        temp = [len(t) for t in FINAL_PARTITIONS]
+        temp = [p.count for p in FINAL_PARTITIONS]
         print(sorted(temp))
         print("NCP = %.2f %%" % ncp)
 
