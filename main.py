@@ -3,7 +3,7 @@ import time
 
 from algorithms.mondrian.mondrian import Mondrian
 
-from db_connectors.ec_connector import EsConnector
+from db_connectors.es_connector import EsConnector
 
 
 def wire_up():
