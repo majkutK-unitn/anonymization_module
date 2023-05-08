@@ -9,5 +9,9 @@ class AbstractAlgorithm(ABC):
         pass
 
     @abstractmethod
-    def run(config) -> bool:
+    def run(self, config) -> bool:
+        pass
+
+    @abstractmethod
+    def calculate_ncp(self) -> float:
         pass
