@@ -44,7 +44,7 @@ def choose_qid_name(partition: Partition) -> str:
     return qid_name
 
 
-def split_numerical_value(numeric_value: str, value_to_split_at: int) -> Tuple[str, str]:
+def split_numerical_value(numeric_value: str, value_to_split_at: int, next_unique_value: int) -> Tuple[str, str]:
     """ Split numeric value along value_to_split_at and return sub ranges """
 
     range_min_and_max = numeric_value.split(',')
@@ -59,10 +59,10 @@ def split_numerical_value(numeric_value: str, value_to_split_at: int) -> Tuple[s
             l_range = str(min_value)
         else:
             l_range = f"{min_value},{value_to_split_at}"
-        if max_value == value_to_split_at:
+        if max_value == next_unique_value:
             r_range = str(max_value)
         else:
-            r_range = f"{value_to_split_at},{max_value}"
+            r_range = f"{next_unique_value},{max_value}"
             
         return l_range, r_range
 
@@ -89,7 +89,7 @@ def split_numerical_attribute(partition: Partition, qid_name: str) -> list[Parti
     l_attributes = partition.attributes.copy()
     r_attributes = partition.attributes.copy()
 
-    (l_gen_value, r_gen_value) = split_numerical_value(partition.attributes[qid_name].gen_value, median)
+    (l_gen_value, r_gen_value) = split_numerical_value(partition.attributes[qid_name].gen_value, median, next_unique_value)
     
     l_width = median - min_value    
     r_width = max_value - next_unique_value
