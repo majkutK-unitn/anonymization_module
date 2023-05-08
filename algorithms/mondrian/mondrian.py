@@ -157,7 +157,7 @@ def check_splitable(partition: Partition):
     """ Check if the partition can be further split while satisfying k-anonymity """
 
     # The sum of all the boolean values is True, if any of the attributes is splittable
-    if sum(map(lambda part: part.split_allowed, partition.attributes.values())):
+    if partition.count >= 2 * GLOBAL_K and sum(map(lambda part: part.split_allowed, partition.attributes.values())):
         return True
         
     return False
