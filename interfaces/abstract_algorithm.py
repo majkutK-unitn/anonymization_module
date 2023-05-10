@@ -1,7 +1,17 @@
 from abc import ABC, abstractmethod
 
+from interfaces.abstract_api import AbstractAPI
+
 
 class AbstractAlgorithm(ABC):
     @abstractmethod
-    def anonymize(config) -> bool:
+    def __init__(self, db_connector: AbstractAPI, config):
+        pass
+
+    @abstractmethod
+    def run(self, config) -> bool:
+        pass
+
+    @abstractmethod
+    def calculate_ncp(self) -> float:
         pass
