@@ -10,29 +10,16 @@ from utils.read_gen_hierarchies import read_gen_hierarchies_from_config_v2
 
 
 class Datafly(AbstractAlgorithm):
-    def __init__(self, db_connector: DataflyAPI, config: dict[str, int|dict]):
+    def __init__(self, db_connector: DataflyAPI):
         self.db_connector = db_connector
-        self.k: int = config["k"]
-        self.qid_names: list[str] = config["attributes"].keys()        
-        self.final_partitions : list[Partition] = []        
-        self.size_of_dataset: int = None
+        self.k: int
+        self.qid_names: list[str]
+
+        self.size_of_dataset: int
+        
+        self.final_partitions : list[Partition] = []
         self.numerical_attr_config = {}
         self.categorical_attr_config = {}
-
-        for key, value in config['attributes'].items():
-            if "tree" in value:
-                if value["datafly_init_level"] != 0:
-                    self.categorical_attr_config[key] = value
-            else:
-                self.numerical_attr_config[key] = value
-
-        self.gen_hiers: dict[str, GenTree] = read_gen_hierarchies_from_config_v2(self.categorical_attr_config)
-
-        Partition.attr_dict = self.gen_hiers.copy()
-        for num_attr_name in self.numerical_attr_config.keys():
-            (min, max) = self.db_connector.get_attribute_min_max(num_attr_name)
-            num_range = NumRange(min, max)
-            Partition.attr_dict[num_attr_name] = num_range
 
 
     def combine_attribute_with_existing_partitions(self, existing_partitions: list[dict[str, Attribute]], attr_name: str, range_or_node: GenTree | NumRange):
@@ -154,10 +141,34 @@ class Datafly(AbstractAlgorithm):
             self.generalize_categorical_attr(attr_with_most_distinct[0], unique_values)
 
         return list(unique_values.values())
+    
+
+    def parse_config(self, config: dict[str, int|dict]):
+        self.k = config["k"]
+        self.qid_names: list[str] = list(config["attributes"].keys())
+
+        self.size_of_dataset: int = self.db_connector.get_document_count()
+        
+        for key, value in config['attributes'].items():
+            if "tree" in value:                
+                self.categorical_attr_config[key] = value
+            else:
+                self.numerical_attr_config[key] = value
+
+        self.gen_hiers: dict[str, GenTree] = read_gen_hierarchies_from_config_v2(self.categorical_attr_config)
+        Partition.attr_dict = self.gen_hiers.copy()        
+
+        for num_attr_name in self.numerical_attr_config.keys():
+            (min, max) = self.db_connector.get_attribute_min_max(num_attr_name)
+            num_range = NumRange(min, max)
+
+            Partition.attr_dict[num_attr_name] = num_range
 
     
-    def run(self) -> bool:
+    def run(self, config: dict[str, int|dict]) -> bool:
+        self.parse_config(config)
         self.get_partition_counts()
+        
         while sum(map(lambda x: x.count, filter(lambda x: x.count < self.k, self.final_partitions))) > self.k:
             self.final_partitions = self.generalize()
 
