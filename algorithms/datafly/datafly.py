@@ -81,12 +81,45 @@ class Datafly(AbstractAlgorithm):
                 self.final_partitions.append(Partition(count, attributes))
 
 
+    # Merge adjacent classes
     def  generalize_numerical_attr(self, attr_name: str):
-        pass
+        attr_values = list(set(map(lambda p: p.attributes[attr_name].gen_value, self.final_partitions)))
+        attr_values.sort()
+        old_to_new_ranges = {}
+
+        for i in range(int(len(attr_values) / 2)):
+            lower = attr_values[i].split(",")
+            higher = attr_values[i + 1].split(",")
+            
+            min_val = int(lower[0])
+            max_val = int(higher[1] if len(higher) > 1 else higher[0])
+
+            gen_value = f"{min_val},{max_val}"
+            width = max_val - min_val
+            new_attribute = Attribute(width, gen_value)
+
+            old_to_new_ranges[attr_values[2*i]] = new_attribute
+            old_to_new_ranges[attr_values[2*i + 1]] = new_attribute       
+
+        for partition in self.final_partitions:
+            try:
+                partition.attributes[attr_name] = old_to_new_ranges[partition.attributes[attr_name].gen_value]
+            # If len(attr_values) % 2 == 1, the last attribute value has no corresponding key in the old_to_new_ranges dict
+            except KeyError:
+                continue
 
 
-    def generalize_categorical_attr(self, attr_name: str):
-        pass
+    # Iterate through all partitions
+    # - collect the ones that have the same signature as the current one and has one of the children of the generalized cat.attr value
+    #   - merge these
+    #   - set some flag so that these are not searched once again
+    def generalize_categorical_attr(self, attr_name: str):        
+        root = Partition.attr_dict[attr_name]
+
+        for partition in self.final_partitions:
+            current_node = root.node(partition.attributes[attr_name].gen_value)
+            parent_node = current_node.ancestors[0]
+            partition.attributes[attr_name] = Attribute(len(parent_node), parent_node.value)
     
 
     def generalize(self):
