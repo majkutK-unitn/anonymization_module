@@ -6,6 +6,7 @@ from elasticsearch import Elasticsearch
 
 from models.attribute import Attribute
 from models.gentree import GenTree
+from models.numrange import NumRange
 from models.partition import Partition
 
 from interfaces.datafly_api import DataflyAPI
@@ -107,7 +108,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
 # >>    DataFly API - BEGIN
 # ------------------------------
     
-    def spread_attribute_into_uniform_buckets(self, attr_name: str, num_of_buckets: int) -> list[str]:
+    def spread_attribute_into_uniform_buckets(self, attr_name: str, num_of_buckets: int) -> list[NumRange]:
         interval_size = int(100 / num_of_buckets)
         percentiles = list(range(interval_size,100,interval_size))
 
@@ -120,16 +121,17 @@ class EsConnector(MondrianAPI, DataflyAPI):
         bucket_upper_bounds = list(map(lambda x: int(x), res["aggregations"][f"{attr_name}_percentiles"]["values"].values()))
         min, max = self.get_attribute_min_max(attr_name)
 
-        gen_values: list[str] = []
+        num_ranges: list[NumRange] = []
+
         for i, bound in enumerate(bucket_upper_bounds + [max]):
             if i == 0:
-                gen_values.append(f"{min},{bound}")
+                num_ranges.append(NumRange(min, bound))                
                 continue
 
-            gen_values.append(f"{bucket_upper_bounds[i-1]},{bound}")            
+            num_ranges.append(NumRange(bucket_upper_bounds[i-1], bound))            
 
-        return gen_values
-        
+        return num_ranges
+    
 
 # ------------------------------
 # <<    DataFly API - END
