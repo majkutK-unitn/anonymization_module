@@ -1,3 +1,5 @@
+import functools
+
 from models.attribute import Attribute
 from models.gentree import GenTree
 from models.numrange import NumRange
@@ -16,3 +18,6 @@ class Partition(object):
     def __init__(self, count: int, attributes: dict[str, Attribute]):        
         self.count = count
         self.attributes = attributes
+
+    def __str__(self) -> str:
+        return functools.reduce(lambda a,b: f"{a}, {b}", map(lambda attr_name_and_value: f"'{attr_name_and_value[0]}': '{attr_name_and_value[1].gen_value}'", self.attributes.items()))
