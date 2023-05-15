@@ -174,6 +174,15 @@ class Datafly(AbstractAlgorithm):
         while sum(map(lambda x: x.count, filter(lambda x: x.count < self.k, self.final_partitions))) > self.k:
             self.final_partitions = self.generalize()
 
+        not_generalized_attributes: dict[str, Attribute] = {}
+        for attr_name in self.qid_names:
+            if attr_name not in self.final_partitions[0].attributes.keys():
+                node_or_range = Partition.attr_dict[attr_name]                
+                not_generalized_attributes[attr_name] = Attribute(len(node_or_range), node_or_range.value)
+
+        for partition in self.final_partitions:
+            partition.attributes.update(not_generalized_attributes)        
+
         return self.final_partitions
     
     def calculate_ncp(self) -> float:
