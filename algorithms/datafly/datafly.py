@@ -185,5 +185,27 @@ class Datafly(AbstractAlgorithm):
 
         return self.final_partitions
     
+
+    def get_normalized_width(self, partition: Partition, qid_name: str) -> float:    
+        """ Return Normalized width of partition """        
+
+        return partition.attributes[qid_name].width * 1.0 / len(Partition.attr_dict[qid_name])
+    
+    
     def calculate_ncp(self) -> float:
-        pass
+        ncp = 0.0
+
+        for partition in self.final_partitions:
+            r_ncp = 0.0
+            for attr_name in self.qid_names:
+                r_ncp += self.get_normalized_width(partition, attr_name)
+
+            r_ncp *= partition.count
+            ncp += r_ncp
+
+        # covert to NCP percentage
+        ncp /= len(self.qid_names)
+        ncp /= self.size_of_dataset
+        ncp *= 100
+
+        return ncp
