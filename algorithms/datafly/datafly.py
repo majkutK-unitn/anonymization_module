@@ -54,7 +54,7 @@ class Datafly(AbstractAlgorithm):
 
         return new_partitions_accumulator
 
-            
+
     def generate_initial_partitions(self):
         temp_partitions: list[dict[str, Attribute]] = [{}]
 
@@ -69,11 +69,22 @@ class Datafly(AbstractAlgorithm):
 
             temp_partitions = self.generate_new_partition_combinations(temp_partitions, attr_name, nodes)
 
-        print("Done")
+        return temp_partitions
 
+
+    def get_partition_counts(self):
+        attributes_of_init_partitions = self.generate_initial_partitions()
+        
+        for attributes in attributes_of_init_partitions:
+            count = self.db_connector.get_document_count(attributes)
+            if count != 0:
+                self.partitions.append(Partition(count, attributes))
+    
     
     def run(self) -> bool:
-        self.generate_initial_partitions()
+        self.get_partition_counts()
+
+        print("Done")
     
     def calculate_ncp(self) -> float:
         pass
