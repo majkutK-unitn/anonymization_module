@@ -28,6 +28,12 @@ class Datafly(AbstractAlgorithm):
 
         self.gen_hiers: dict[str, GenTree] = read_gen_hierarchies_from_config_v2(self.categorical_attr_config)
 
+        Partition.attr_dict = self.gen_hiers.copy()
+        for num_attr_name in self.numerical_attr_config.keys():
+            (min, max) = self.db_connector.get_attribute_min_max(num_attr_name)
+            num_range = NumRange(min, max)
+            Partition.attr_dict[num_attr_name] = num_range
+
 
     def combine_attribute_with_existing_partitions(self, existing_partitions: list[dict[str, Attribute]], attr_name: str, range_or_node: GenTree | NumRange):
         new_partitions: list[dict[str, Attribute]] = []
