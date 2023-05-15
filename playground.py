@@ -1,3 +1,6 @@
+import json
+from algorithms.datafly.datafly import Datafly
+
 from db_connectors.es_connector import EsConnector
 
 from models.attribute import Attribute
@@ -6,6 +9,9 @@ from models.numrange import NumRange
 from models.partition import Partition
 
 from utils.read_gen_hierarchies import read_gen_hierarchies, read_gen_hierarchies_from_config
+
+
+ES_CONNECTOR = EsConnector()
 
 
 def random_testing():
@@ -74,3 +80,18 @@ def run_anonymization():
     #result, eval_result = mondrian(gen_hiers, qid_names, k)    
     #print("NCP %0.2f" % eval_result[0] + "%")
     #print("Running time %0.2f" % eval_result[1] + " seconds")
+
+
+def __test__spread_attribute_values():
+    ES_CONNECTOR.spread_attribute_into_uniform_buckets("age", 20)
+
+
+def __test__datafly_init():
+    config_file = open('configs/adults_config_v2.json')
+    config = json.load(config_file)
+    config_file.close()
+    datafly = Datafly(ES_CONNECTOR)
+    datafly.run(config)
+    
+
+__test__datafly_init()
