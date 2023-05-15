@@ -83,6 +83,7 @@ class Datafly(AbstractAlgorithm):
 
     # Merge adjacent classes
     def  generalize_numerical_attr(self, attr_name: str):
+        unique_values: dict[str, Partition] = {}        
         attr_values = list(set(map(lambda p: p.attributes[attr_name].gen_value, self.final_partitions)))
         attr_values.sort()
         old_to_new_ranges = {}
@@ -99,27 +100,45 @@ class Datafly(AbstractAlgorithm):
             new_attribute = Attribute(width, gen_value)
 
             old_to_new_ranges[attr_values[2*i]] = new_attribute
-            old_to_new_ranges[attr_values[2*i + 1]] = new_attribute       
+            old_to_new_ranges[attr_values[2*i + 1]] = new_attribute
 
-        for partition in self.final_partitions:
-            try:
-                partition.attributes[attr_name] = old_to_new_ranges[partition.attributes[attr_name].gen_value]
-            # If len(attr_values) % 2 == 1, the last attribute value has no corresponding key in the old_to_new_ranges dict
-            except KeyError:
-                continue
+        if len(attr_values) % 2 == 1:
+            gen_value = attr_values[-1]
+            min_max = gen_value.split(",")
+            width = 0 if len(gen_value) == 1 else int(min_max[1]) - int(min_max[0])
+            old_to_new_ranges[gen_value] = Attribute(width, gen_value)
+
+
+        for partition in self.final_partitions:            
+            partition.attributes[attr_name] = old_to_new_ranges[partition.attributes[attr_name].gen_value]
+
+            if str(partition) in unique_values:
+                unique_values[str(partition)].count += partition.count
+            else:
+                unique_values[str(partition)] = partition
+
+        return list(unique_values.values())
 
 
     # Iterate through all partitions
     # - collect the ones that have the same signature as the current one and has one of the children of the generalized cat.attr value
     #   - merge these
     #   - set some flag so that these are not searched once again
-    def generalize_categorical_attr(self, attr_name: str):        
+    def generalize_categorical_attr(self, attr_name: str):
+        unique_values: dict[str, Partition] = {}
         root = Partition.attr_dict[attr_name]
 
         for partition in self.final_partitions:
             current_node = root.node(partition.attributes[attr_name].gen_value)
             parent_node = current_node.ancestors[0]
             partition.attributes[attr_name] = Attribute(len(parent_node), parent_node.value)
+
+            if str(partition) in unique_values:
+                unique_values[str(partition)].count += partition.count
+            else:
+                unique_values[str(partition)] = partition
+
+        return list(unique_values.values())
     
 
     def generalize(self):
@@ -131,9 +150,9 @@ class Datafly(AbstractAlgorithm):
                 attr_with_most_distinct = (attr_name, distinct_value_count)
 
         if attr_with_most_distinct[0] in self.numerical_attr_config.keys():
-            self.generalize_numerical_attr(attr_with_most_distinct[0])
+            self.final_partitions = self.generalize_numerical_attr(attr_with_most_distinct[0])
         else:
-            self.generalize_categorical_attr(attr_with_most_distinct[0])            
+            self.final_partitions = self.generalize_categorical_attr(attr_with_most_distinct[0])            
 
     
     def run(self) -> bool:
