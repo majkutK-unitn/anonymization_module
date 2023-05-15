@@ -107,7 +107,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
 # >>    DataFly API - BEGIN
 # ------------------------------
     
-    def spread_attribute_into_uniform_buckets(self, attr_name: str, num_of_buckets: int):
+    def spread_attribute_into_uniform_buckets(self, attr_name: str, num_of_buckets: int) -> list[str]:
         interval_size = int(100 / num_of_buckets)
         percentiles = list(range(interval_size,100,interval_size))
 
@@ -120,7 +120,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         bucket_upper_bounds = list(map(lambda x: int(x), res["aggregations"][f"{attr_name}_percentiles"]["values"].values()))
         min, max = self.get_attribute_min_max(attr_name)
 
-        gen_values: list[int] = []
+        gen_values: list[str] = []
         for i, bound in enumerate(bucket_upper_bounds + [max]):
             if i == 0:
                 gen_values.append(f"{min},{bound}")
