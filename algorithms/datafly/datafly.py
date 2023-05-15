@@ -46,15 +46,17 @@ class Datafly(AbstractAlgorithm):
         temp_partitions: list[dict[str, Attribute]] = [{}]
 
         for attr_name, value in self.numerical_attr_config.items():
-            num_ranges = self.db_connector.spread_attribute_into_uniform_buckets(attr_name, value["datafly_num_of_buckets"])
+            if value["datafly_num_of_buckets"] > 0:
+                num_ranges = self.db_connector.spread_attribute_into_uniform_buckets(attr_name, value["datafly_num_of_buckets"])
 
-            temp_partitions = self.generate_new_partition_combinations(temp_partitions, attr_name, num_ranges)
+                temp_partitions = self.generate_new_partition_combinations(temp_partitions, attr_name, num_ranges)
                 
 
-        for attr_name, value in self.categorical_attr_config.items():            
-            nodes = self.gen_hiers[attr_name].nodes_on_level(value["datafly_init_level"])
+        for attr_name, value in self.categorical_attr_config.items():
+            if value["datafly_init_level"] > 0:
+                nodes = self.gen_hiers[attr_name].nodes_on_level(value["datafly_init_level"])
 
-            temp_partitions = self.generate_new_partition_combinations(temp_partitions, attr_name, nodes)
+                temp_partitions = self.generate_new_partition_combinations(temp_partitions, attr_name, nodes)
 
         return temp_partitions
 
