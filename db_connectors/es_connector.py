@@ -128,7 +128,10 @@ class EsConnector(MondrianAPI, DataflyAPI):
                 num_ranges.append(NumRange(min, bound))                
                 continue
 
-            num_ranges.append(NumRange(bucket_upper_bounds[i-1], bound))            
+            if bucket_upper_bounds[i-1] == bound:
+                num_ranges.append(NumRange(bound, bound))
+            else:
+                num_ranges.append(NumRange(bucket_upper_bounds[i-1] + 1, bound))            
 
         return num_ranges
     

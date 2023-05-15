@@ -48,12 +48,7 @@ class Datafly(AbstractAlgorithm):
 
         return new_partitions_accumulator
 
-        
-    # (1) Get a dict of attributes: what generalization to use (num > how many buckets: cat > what level)
-    # (2) Create an Attribute of each gen_value
-    # (3) Iterate through all attributes and combine them one by one (age x edu_num: (age, edu_num) x race, (age, edu_num, race) x sex)
-    #
-    # TODO: fix - check if multiple percentiles return the same value, and avoid creating ranges of (9,9)
+            
     def generate_initial_partitions(self):
         temp_partitions: list[dict[str, Attribute]] = [{}]
 
