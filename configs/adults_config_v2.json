@@ -1,0 +1,275 @@
+{
+    "k": 10,    
+    "sensitive_attrs": ["class"],
+    "attributes": {
+        "age": {
+            "datafly_num_of_buckets": 20
+        },
+        "workclass": {
+            "datafly_init_level": 0,
+            "tree": {
+                "value": "*",
+                "children": [
+                    {
+                        "value": "Private",
+                        "children": []
+                    },
+                    {
+                        "value": "Self-employ",
+                        "children": [
+                            {
+                                "value": "Self-emp-not-inc",
+                                "children": []
+                            },
+                            {
+                                "value": "Self-emp-inc",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "value": "gov",
+                        "children": [
+                            {
+                                "value": "Federal-gov",
+                                "children": []
+                            },
+                            {
+                                "value": "Local-gov",
+                                "children": []
+                            },
+                            {
+                                "value": "State-gov",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "value": "not-work",
+                        "children": [
+                            {
+                                "value": "Without-pay",
+                                "children": []
+                            },
+                            {
+                                "value": "Never-worked",
+                                "children": []
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "education_num": {
+            "datafly_num_of_buckets": 5
+        },
+        "marital_status": {
+            "datafly_init_level": 2,
+            "tree": {
+                "value": "*",
+                "children": [
+                    {
+                        "value": "Never-married",
+                        "children": []
+                    },
+                    {
+                        "value": "Married",
+                        "children": [
+                            {
+                                "value": "Married-civ-spouse",
+                                "children": []
+                            },
+                            {
+                                "value": "Married-AF-spouse",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "value": "leave",
+                        "children": [
+                            {
+                                "value": "Divorced",
+                                "children": []
+                            },
+                            {
+                                "value": "Separated",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "value": "alone",
+                        "children": [
+                            {
+                                "value": "Widowed",
+                                "children": []
+                            },
+                            {
+                                "value": "Married-spouse-absent",
+                                "children": []
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "occupation": {
+            "datafly_init_level": 0,
+            "tree": {
+                "value": "*",
+                "children": [
+                    {
+                        "value": "Tech-support",
+                        "children": []
+                    },
+                    {
+                        "value": "Craft-repair",
+                        "children": []
+                    },
+                    {
+                        "value": "Other-service",
+                        "children": []
+                    },
+                    {
+                        "value": "Sales",
+                        "children": []
+                    },
+                    {
+                        "value": "Exec-managerial",
+                        "children": []
+                    },
+                    {
+                        "value": "Prof-specialty",
+                        "children": []
+                    },
+                    {
+                        "value": "Handlers-cleaners",
+                        "children": []
+                    },
+                    {
+                        "value": "Machine-op-inspct",
+                        "children": []
+                    },
+                    {
+                        "value": "Adm-clerical",
+                        "children": []
+                    },
+                    {
+                        "value": "Farming-fishing",
+                        "children": []
+                    },
+                    {
+                        "value": "Transport-moving",
+                        "children": []
+                    },
+                    {
+                        "value": "Priv-house-serv",
+                        "children": []
+                    },
+                    {
+                        "value": "Protective-serv",
+                        "children": []
+                    },
+                    {
+                        "value": "Armed-Forces",
+                        "children": []
+                    }
+                ]
+            }
+        },
+        "race": {
+            "datafly_init_level": 0,
+            "tree": {
+                "value": "*",
+                "children": [
+                    {
+                        "value": "White",
+                        "children": []
+                    },
+                    {
+                        "value": "Asian-Pac-Islander",
+                        "children": []
+                    },
+                    {
+                        "value": "Amer-Indian-Eskimo",
+                        "children": []
+                    },
+                    {
+                        "value": "Other",
+                        "children": []
+                    },
+                    {
+                        "value": "Black",
+                        "children": []
+                    }
+                ]
+            }
+        },
+        "sex": {
+            "datafly_init_level": 1,
+            "tree": {
+                "value": "*",
+                "children": [
+                    {
+                        "value": "Female",
+                        "children": []
+                    },
+                    {
+                        "value": "Male",
+                        "children": []
+                    }
+                ]
+            }
+        },
+        "native_country": {
+            "datafly_init_level": 0,
+            "tree": {
+                "value": "*",
+                "children": [
+                    {"value": "United-States", "children": []},
+                    {"value": "Cambodia", "children": []},
+                    {"value": "England", "children": []},
+                    {"value": "Puerto-Rico", "children": []},
+                    {"value": "Canada", "children": []},
+                    {"value": "Germany", "children": []},
+                    {"value": "Outlying-US(Guam-USVI-etc)", "children": []},
+                    {"value": "India", "children": []},
+                    {"value": "Japan", "children": []},
+                    {"value": "Greece", "children": []},
+                    {"value": "South", "children": []},
+                    {"value": "China", "children": []},
+                    {"value": "Cuba", "children": []},
+                    {"value": "Iran", "children": []},
+                    {"value": "Honduras", "children": []},
+                    {"value": "Philippines", "children": []},
+                    {"value": "Italy", "children": []},
+                    {"value": "Poland", "children": []},
+                    {"value": "Jamaica", "children": []},
+                    {"value": "Vietnam", "children": []},
+                    {"value": "Mexico", "children": []},
+                    {"value": "Portugal", "children": []},
+                    {"value": "Ireland", "children": []},
+                    {"value": "France", "children": []},
+                    {"value": "Dominican-Republic", "children": []},
+                    {"value": "Laos", "children": []},
+                    {"value": "Ecuador", "children": []},
+                    {"value": "Taiwan", "children": []},
+                    {"value": "Haiti", "children": []},
+                    {"value": "Columbia", "children": []},
+                    {"value": "Hungary", "children": []},
+                    {"value": "Guatemala", "children": []},
+                    {"value": "Nicaragua", "children": []},
+                    {"value": "Scotland", "children": []},
+                    {"value": "Thailand", "children": []},
+                    {"value": "Yugoslavia", "children": []},
+                    {"value": "El-Salvador", "children": []},
+                    {"value": "Trinadad&Tobago", "children": []},
+                    {"value": "Peru", "children": []},
+                    {"value": "Hong", "children": []},
+                    {"value": "Holand-Netherlands", "children": []}
+                ]
+            }
+        }
+    }
+}
