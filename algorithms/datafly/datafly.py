@@ -14,7 +14,7 @@ class Datafly(AbstractAlgorithm):
         self.db_connector = db_connector
         self.k: int = config["k"]
         self.qid_names: list[str] = config["attributes"].keys()        
-        self.partitions : list[Partition] = []        
+        self.final_partitions : list[Partition] = []        
         self.size_of_dataset: int = None
         self.numerical_attr_config = {}
         self.categorical_attr_config = {}
@@ -78,13 +78,37 @@ class Datafly(AbstractAlgorithm):
         for attributes in attributes_of_init_partitions:
             count = self.db_connector.get_document_count(attributes)
             if count != 0:
-                self.partitions.append(Partition(count, attributes))
+                self.final_partitions.append(Partition(count, attributes))
+
+
+    def  generalize_numerical_attr(self, attr_name: str):
+        pass
+
+
+    def generalize_categorical_attr(self, attr_name: str):
+        pass
     
+
+    def generalize(self):
+        attr_with_most_distinct = ("", -1)
+
+        for attr_name in self.final_partitions[0].attributes.keys():
+            distinct_value_count = len(set(map(lambda p: p.attributes[attr_name].gen_value, self.final_partitions)))
+            if attr_with_most_distinct[1] < distinct_value_count:
+                attr_with_most_distinct = (attr_name, distinct_value_count)
+
+        if attr_with_most_distinct[0] in self.numerical_attr_config.keys():
+            self.generalize_numerical_attr(attr_with_most_distinct[0])
+        else:
+            self.generalize_categorical_attr(attr_with_most_distinct[0])            
+
     
     def run(self) -> bool:
         self.get_partition_counts()
+        while sum(map(lambda x: x.count, filter(lambda x: x.count < self.k, self.final_partitions))) > self.k:
+            self.generalize()
 
-        print("Done")
+        return self.final_partitions
     
     def calculate_ncp(self) -> float:
         pass
