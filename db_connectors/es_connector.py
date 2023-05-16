@@ -17,9 +17,7 @@ from interfaces.datafly_api import DataflyAPI
 from interfaces.mondrian_api import MondrianAPI
 
 # TODO:
-#   (1) implement push_ecs()
-#   (2) refactor map_attributes_to_query
-#   (3) remove the int() casts so that the project can handle floats as well (with the adult dataset we only need ints)
+#   (1) remove the int() casts so that the project can handle floats as well (with the adult dataset we only need ints)
 class EsConnector(MondrianAPI, DataflyAPI):
 
     def __init__(self):
@@ -35,17 +33,92 @@ class EsConnector(MondrianAPI, DataflyAPI):
         )
 
 
+    def map_docs_to_individual_anonymized_docs(self, original_docs: list, anon_doc_with_qids: dict[str, str]):
+        ''' 
+        For every original document, create an anonymized one 
+            { ...qids, "sa_1": "a", "sa_2": "b" },
+            { ...qids, "sa_1": "a", "sa_2": "d" },
+            { ...qids, "sa_1": "a", "sa_2": "d" },
+        '''
+
+        for doc in original_docs:                
+            yield anon_doc_with_qids | {sensitive_attr_name: doc[sensitive_attr_name][0] for sensitive_attr_name in Config.sensitive_attrs}
+
+
+    def map_docs_to_array_of_unique_sa_combinations_per_partition(self, original_docs: list, anon_doc_with_qids: dict[str, str]):
+        ''' 
+        For every partition, create one document, with all sensitive attribute values mapped into one sensitive_attrs field 
+            { 
+                ...qids,
+                "sensitive_attrs": [
+                    { "sa_1": "a", "sa_2": "b", "count": 1},
+                    { "sa_1": "a", "sa_2": "d", "count": 4}
+                    { "sa_1": "c", "sa_2": "d", "count": 23}
+                ]
+            }
+        '''
+        accumulator = {}
+
+        for doc in original_docs:                
+            temp = {sensitive_attr_name: doc[sensitive_attr_name][0] for sensitive_attr_name in Config.sensitive_attrs}
+            if str(temp) in accumulator:
+                accumulator[str(temp)]["count"] += 1
+            else:
+                accumulator[str(temp)] = temp | {"count": 1}
+        
+        yield anon_doc_with_qids | {"sensitive_attrs": list(accumulator.values())}
+
+    
+    def map_docs_to_unique_sa_combinations_per_partition(self, original_docs: list, anon_doc_with_qids: dict[str, str]):
+        ''' 
+        For every unique sensitive attribute value combination, create a document with the count of documents with this signature
+            { ...qids, "sa_1": "a", "sa_2": "b", "count": 1 },
+            { ...qids, "sa_1": "a", "sa_2": "d", "count": 4 }, 
+            { ...qids, "sa_1": "c", "sa_2": "d", "count": 23 }
+        '''
+        accumulator = {}
+
+        for doc in original_docs:                
+            temp = {sensitive_attr_name: doc[sensitive_attr_name][0] for sensitive_attr_name in Config.sensitive_attrs}
+            if str(temp) in accumulator:
+                accumulator[str(temp)]["count"] += 1
+            else:
+                accumulator[str(temp)] = temp | {"count": 1}
+
+        for unique_sa_combination in list(accumulator.values()):
+             yield anon_doc_with_qids | unique_sa_combination                
+
+    
+    def map_docs_to_sa_arrays_per_partition(self, original_docs: list, anon_doc_with_qids: dict[str, str]):
+        ''' 
+        For every partition, create one document, with all sensitive values dumped into an array
+            { 
+                ...qids,
+                "sa_1": [ "a", "a", "c" ],
+                "sa_2": [ "b", "d", "d" ]
+            }
+        '''
+
+        accumulator = {sensitive_attr_name: [] for sensitive_attr_name in Config.sensitive_attrs}
+
+        for doc in original_docs:
+            for sensitive_attr_name in Config.sensitive_attrs:
+                accumulator[sensitive_attr_name].append(doc[sensitive_attr_name][0])
+
+        yield anon_doc_with_qids | accumulator
+
+
     def generate_anonymized_docs(self, partitions: list[Partition]):
         for partition in partitions:
             query = self.map_attributes_to_query(partition.attributes)
-            res = self.es_client.search(index="adults", query=query, fields=Config.sensitive_attrs, _source=False)
+            res = self.es_client.search(index="adults", query=query, fields=Config.sensitive_attrs, _source=False, size=partition.count)
             original_docs = list(map(lambda hit: hit["fields"], res["hits"]["hits"]))            
             
             # TODO: map to ES data_types
             anon_doc_with_qids = {attr_name: attr.gen_value for attr_name, attr in partition.attributes.items()}            
             
-            for doc in original_docs:                
-                yield anon_doc_with_qids | {sensitive_attr_name: doc[sensitive_attr_name][0] for sensitive_attr_name in Config.sensitive_attrs}                
+            yield from self.map_docs_to_individual_anonymized_docs(original_docs, anon_doc_with_qids)
+
 
 
     def push_ecs(self, partitions: list[Partition]) -> bool:
@@ -57,7 +130,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
             progress.update(1)
             successes += ok
         print("Indexed %d/%d documents" % (successes, Config.size_of_dataset))
-        
+
 
     def get_document_count(self, attributes: dict[str, Attribute] = None) -> int:    
         query = None
