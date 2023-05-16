@@ -8,7 +8,7 @@ from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
 
-from utils.read_gen_hierarchies import read_gen_hierarchies_from_json, read_gen_hierarchies_from_text
+from utils.gen_hierarchy_parser import read_gen_hierarchies_from_json, read_gen_hierarchies_from_text
 
 
 ES_CONNECTOR = EsConnector()
