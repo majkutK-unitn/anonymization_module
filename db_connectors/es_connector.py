@@ -1,8 +1,11 @@
 from os import getenv
 
+import tqdm
+
 from typing import Tuple
 
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers import streaming_bulk
 
 from models.attribute import Attribute
 from models.gentree import GenTree
@@ -29,10 +32,32 @@ class EsConnector(MondrianAPI, DataflyAPI):
                 hosts="https://neteye2.test:9200",
                 api_key=(API_KEY_ID, API_KEY_SECRET), 
                 ca_certs=ROOT_CA_PATH
-            )
+        )
 
-    def push_ecs(ecs: list) -> bool:
-        pass
+
+    def generate_anonymized_docs(self, partitions: list[Partition]):
+        for partition in partitions:
+            query = self.map_attributes_to_query(partition.attributes)
+            res = self.es_client.search(index="adults", query=query, fields=Config.sensitive_attrs, _source=False)
+            original_docs = list(map(lambda hit: hit["fields"], res["hits"]["hits"]))            
+            
+            # TODO: map to ES data_types
+            anon_doc_with_qids = {attr_name: attr.gen_value for attr_name, attr in partition.attributes.items()}            
+            
+            for doc in original_docs:                
+                yield anon_doc_with_qids | {sensitive_attr_name: doc[sensitive_attr_name][0] for sensitive_attr_name in Config.sensitive_attrs}                
+
+
+    def push_ecs(self, partitions: list[Partition]) -> bool:
+        progress = tqdm.tqdm(unit="docs", total=Config.size_of_dataset)
+        successes = 0
+        for ok, action in streaming_bulk(
+            client=self.es_client, index="adults_anon", actions=self.generate_anonymized_docs(partitions),
+        ):
+            progress.update(1)
+            successes += ok
+        print("Indexed %d/%d documents" % (successes, Config.size_of_dataset))
+        
 
     def get_document_count(self, attributes: dict[str, Attribute] = None) -> int:    
         query = None

@@ -206,7 +206,7 @@ class Mondrian(AbstractAlgorithm):
         parse_config(config, self.db_connector)      
 
     
-    def run(self, config: dict[str, int|dict]):
+    def run(self, config: dict[str, int|dict]) -> bool:
         """
         Basic Mondrian for k-anonymity.
         This fuction support both numeric values and categoric values.
@@ -224,7 +224,7 @@ class Mondrian(AbstractAlgorithm):
         if sum(map(lambda partition: partition.count, self.final_partitions)) != whole_partition.count:        
             raise Exception("Losing records during anonymization")
 
-        return self.final_partitions
+        return self.db_connector.push_ecs(self.final_partitions)
     
 
     def calculate_ncp(self):
