@@ -6,7 +6,7 @@ from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
 
-from utils.read_gen_hierarchies import read_gen_hierarchies_from_config_v2
+from utils.read_gen_hierarchies import read_gen_hierarchies_from_json
 
 
 class Datafly(AbstractAlgorithm):
@@ -158,7 +158,7 @@ class Datafly(AbstractAlgorithm):
             else:
                 self.numerical_attr_config[key] = value
 
-        self.gen_hiers = read_gen_hierarchies_from_config_v2(self.categorical_attr_config)
+        self.gen_hiers = read_gen_hierarchies_from_json(self.categorical_attr_config)
         Partition.attr_dict = self.gen_hiers.copy()        
 
         for num_attr_name in self.numerical_attr_config.keys():

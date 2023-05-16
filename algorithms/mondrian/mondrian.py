@@ -10,7 +10,7 @@ from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
 
-from utils.read_gen_hierarchies import read_gen_hierarchies_from_config, read_gen_hierarchies_from_config_v2
+from utils.read_gen_hierarchies import read_gen_hierarchies_from_json
 
 
 class Mondrian(AbstractAlgorithm):
@@ -226,7 +226,7 @@ class Mondrian(AbstractAlgorithm):
         self.size_of_dataset: int = self.db_connector.get_document_count()        
 
         cat_attrs_from_config = dict(filter(lambda attr: "tree" in attr[1], config['attributes'].items()))
-        self.gen_hiers = read_gen_hierarchies_from_config_v2(cat_attrs_from_config)
+        self.gen_hiers = read_gen_hierarchies_from_json(cat_attrs_from_config)
 
     
     def run(self, config: dict[str, int|dict]):
