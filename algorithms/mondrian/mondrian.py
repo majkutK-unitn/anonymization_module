@@ -10,7 +10,7 @@ from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
 
-from utils.read_gen_hierarchies import read_gen_hierarchies_from_json
+from utils.config_processor import parse_config
 
 
 class Mondrian(AbstractAlgorithm):
@@ -28,7 +28,7 @@ class Mondrian(AbstractAlgorithm):
     def get_normalized_width(self, partition: Partition, qid_name: str) -> float:    
         """ Return Normalized width of partition """        
 
-        return partition.attributes[qid_name].width * 1.0 / len(Partition.attr_dict[qid_name])
+        return partition.attributes[qid_name].width * 1.0 / len(Partition.ATTR_METADATA[qid_name])
 
 
     def choose_qid_name(self, partition: Partition) -> str:
@@ -123,7 +123,7 @@ class Mondrian(AbstractAlgorithm):
     def split_categorical_attribute(self, partition: Partition, qid_name: str) -> list[Partition]:
         """ Split categorical attribute using generalization hierarchy """
 
-        node_to_split_at: GenTree = Partition.attr_dict[qid_name].node(partition.attributes[qid_name].gen_value)
+        node_to_split_at: GenTree = Partition.ATTR_METADATA[qid_name].node(partition.attributes[qid_name].gen_value)
 
         # If the node (has no children, and thus) is a leaf, the partitioning is not possible
         if not len(node_to_split_at.children):
@@ -154,7 +154,7 @@ class Mondrian(AbstractAlgorithm):
     def split_partition(self, partition: Partition, qid_name: str):
         """ Split partition and distribute records to different sub-partitions """
 
-        if isinstance(Partition.attr_dict[qid_name], NumRange):
+        if isinstance(Partition.ATTR_METADATA[qid_name], NumRange):
             return self.split_numerical_attribute(partition, qid_name)
         else:
             return self.split_categorical_attribute(partition, qid_name)
@@ -197,36 +197,20 @@ class Mondrian(AbstractAlgorithm):
     def set_up_the_first_partition(self):
         """ Reset all global variables """        
 
-        attributes: dict[str, Attribute] = {}
-        gen_hiers_and_num_ranges: dict[str, NumRange|GenTree] = self.gen_hiers
+        attributes: dict[str, Attribute] = {}        
         
         for attr_name in self.qid_names:
-            root_node_or_num_range: NumRange | GenTree
-
-            if attr_name in self.gen_hiers:
-                root_node_or_num_range = self.gen_hiers[attr_name]            
-            else:            
-                (min, max) = self.db_connector.get_attribute_min_max(attr_name)
-                root_node_or_num_range = NumRange(min, max)
-                gen_hiers_and_num_ranges[attr_name] = root_node_or_num_range
-    
+            root_node_or_num_range = Partition.ATTR_METADATA[attr_name]    
             attributes[attr_name] = Attribute(len(root_node_or_num_range), root_node_or_num_range.value)
     
         count = self.db_connector.get_document_count()
-        whole_partition = Partition(count, attributes)
-
-        Partition.attr_dict = gen_hiers_and_num_ranges
+        whole_partition = Partition(count, attributes)        
         
         return whole_partition
     
-    def parse_config(self, config: dict[str, int|dict]):
-        self.k = config["k"]
-        self.qid_names: list[str] = list(config["attributes"].keys())
 
-        self.size_of_dataset: int = self.db_connector.get_document_count()        
-
-        cat_attrs_from_config = dict(filter(lambda attr: "tree" in attr[1], config['attributes'].items()))
-        self.gen_hiers = read_gen_hierarchies_from_json(cat_attrs_from_config)
+    def initialize(self, config: dict[str, int|dict]):
+        (self.k, self.qid_names, self.gen_hiers, self.size_of_dataset) = parse_config(config, self.db_connector)      
 
     
     def run(self, config: dict[str, int|dict]):
@@ -238,7 +222,7 @@ class Mondrian(AbstractAlgorithm):
         The final result is returned in 2-dimensional list.
         """
 
-        self.parse_config(config)
+        self.initialize(config)
 
         whole_partition = self.set_up_the_first_partition()
         self.size_of_dataset = whole_partition.count
