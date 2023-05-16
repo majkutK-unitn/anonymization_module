@@ -5,11 +5,11 @@ from interfaces.abstract_api import AbstractAPI
 
 class AbstractAlgorithm(ABC):
     @abstractmethod
-    def __init__(self, db_connector: AbstractAPI, config):
+    def __init__(self, db_connector: AbstractAPI):
         pass
 
     @abstractmethod
-    def run(self) -> bool:
+    def run(self, config: dict[str, int|dict]) -> bool:
         pass
 
     @abstractmethod
