@@ -121,10 +121,16 @@ class Datafly(AbstractAlgorithm):
         root = Partition.ATTR_METADATA[attr_name]
 
         for partition in self.final_partitions:
+            new_attribute: Attribute
             current_node = root.node(partition.attributes[attr_name].gen_value)
-            parent_node = current_node.ancestors[0]
 
-            new_attribute = Attribute(len(parent_node), parent_node.value)
+            # The hierarchy trees are not necessarily balanced: in some cases one value might already have been generalized to the root value, therefore it is kept in its original form
+            if current_node.ancestors:
+                parent_node = current_node.ancestors[0]
+                new_attribute = Attribute(len(parent_node), parent_node.value)
+            else:
+                new_attribute = partition.attributes[attr_name]            
+            
             self.merge_generalized_partitions(partition, attr_name, new_attribute, unique_values)
 
 
