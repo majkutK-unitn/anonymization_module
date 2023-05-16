@@ -1,61 +1,12 @@
 {
-    "k": 10,
-    "qid_names": ["age", "workclass", "education_num", "marital_status", "occupation", "race", "sex", "native_country"],
+    "k": 10,    
     "sensitive_attrs": ["class"],
-    "gen_hierarchies": [
-        {
-            "name": "marital_status",
-            "tree": {
-                "value": "*",
-                "children": [
-                    {
-                        "value": "Never-married",
-                        "children": []
-                    },
-                    {
-                        "value": "Married",
-                        "children": [
-                            {
-                                "value": "Married-civ-spouse",
-                                "children": []
-                            },
-                            {
-                                "value": "Married-AF-spouse",
-                                "children": []
-                            }
-                        ]
-                    },
-                    {
-                        "value": "leave",
-                        "children": [
-                            {
-                                "value": "Divorced",
-                                "children": []
-                            },
-                            {
-                                "value": "Separated",
-                                "children": []
-                            }
-                        ]
-                    },
-                    {
-                        "value": "alone",
-                        "children": [
-                            {
-                                "value": "Widowed",
-                                "children": []
-                            },
-                            {
-                                "value": "Married-spouse-absent",
-                                "children": []
-                            }
-                        ]
-                    }
-                ]
-            }
+    "attributes": {
+        "age": {
+            "datafly_num_of_buckets": 20
         },
-        {
-            "name": "workclass",
+        "workclass": {
+            "datafly_init_level": 0,
             "tree": {
                 "value": "*",
                 "children": [
@@ -109,8 +60,62 @@
                 ]
             }
         },
-        {
-            "name": "occupation",
+        "education_num": {
+            "datafly_num_of_buckets": 5
+        },
+        "marital_status": {
+            "datafly_init_level": 2,
+            "tree": {
+                "value": "*",
+                "children": [
+                    {
+                        "value": "Never-married",
+                        "children": []
+                    },
+                    {
+                        "value": "Married",
+                        "children": [
+                            {
+                                "value": "Married-civ-spouse",
+                                "children": []
+                            },
+                            {
+                                "value": "Married-AF-spouse",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "value": "leave",
+                        "children": [
+                            {
+                                "value": "Divorced",
+                                "children": []
+                            },
+                            {
+                                "value": "Separated",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "value": "alone",
+                        "children": [
+                            {
+                                "value": "Widowed",
+                                "children": []
+                            },
+                            {
+                                "value": "Married-spouse-absent",
+                                "children": []
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "occupation": {
+            "datafly_init_level": 0,
             "tree": {
                 "value": "*",
                 "children": [
@@ -173,8 +178,8 @@
                 ]
             }
         },
-        {
-            "name": "race",
+        "race": {
+            "datafly_init_level": 0,
             "tree": {
                 "value": "*",
                 "children": [
@@ -201,8 +206,8 @@
                 ]
             }
         },
-        {
-            "name": "sex",
+        "sex": {
+            "datafly_init_level": 1,
             "tree": {
                 "value": "*",
                 "children": [
@@ -217,8 +222,8 @@
                 ]
             }
         },
-        {
-            "name": "native_country",
+        "native_country": {
+            "datafly_init_level": 0,
             "tree": {
                 "value": "*",
                 "children": [
@@ -266,5 +271,5 @@
                 ]
             }
         }
-    ]
+    }
 }

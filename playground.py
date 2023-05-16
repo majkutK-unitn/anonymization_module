@@ -8,7 +8,7 @@ from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
 
-from utils.read_gen_hierarchies import read_gen_hierarchies, read_gen_hierarchies_from_config
+from utils.gen_hierarchy_parser import read_gen_hierarchies_from_json, read_gen_hierarchies_from_text
 
 
 ES_CONNECTOR = EsConnector()
@@ -20,17 +20,17 @@ def random_testing():
     #print(connector.get_attribute_min_max("age"))
     #print(connector.get_document_count())
 
-    x = read_gen_hierarchies(["marital_status", "workclass"])
+    x = read_gen_hierarchies_from_text(["marital_status", "workclass"])
       
     config_file = open('configs/adults_config.json')
     config = json.load(config_file)
     
-    y = read_gen_hierarchies_from_config(config['gen_hierarchies'])
+    y = read_gen_hierarchies_from_json(config['attributes'])
         
     config_file.close()
 
-    Partition.attr_dict = y
-    Partition.attr_dict["age"] = NumRange(10, 100)
+    Partition.ATTR_METADATA = y
+    Partition.ATTR_METADATA["age"] = NumRange(10, 100)
 
     partition = Partition(21, {
         "age": Attribute(20, "30,50", True),
@@ -52,12 +52,12 @@ def __test__map_attributes_to_query():
     config_file = open('configs/adults_config.json')
     config = json.load(config_file)
     
-    y = read_gen_hierarchies_from_config(config['gen_hierarchies'])
+    y = read_gen_hierarchies_from_json(config['attributes'])
         
     config_file.close()
 
-    Partition.attr_dict = y
-    Partition.attr_dict["age"] = NumRange(10, 100)
+    Partition.ATTR_METADATA = y
+    Partition.ATTR_METADATA["age"] = NumRange(10, 100)
 
     partition = Partition(21, {
         "age": Attribute(20, "10,20", True),
@@ -72,7 +72,7 @@ def __test__map_attributes_to_query():
 def run_anonymization():
     # qid_names = ["age", "education_num", "workclass", "marital_status", "occupation", "race", "sex", "native_country", "relationship"]
     qid_names = ["age", "education_num", "workclass", "marital_status", "occupation", "race", "sex", "native_country"]
-    gen_hiers = read_gen_hierarchies(qid_names[2:])    
+    gen_hiers = read_gen_hierarchies_from_text(qid_names[2:])    
     k = 10
 
     print("K=", k)
@@ -87,7 +87,7 @@ def __test__spread_attribute_values():
 
 
 def __test__datafly_init():
-    config_file = open('configs/adults_config_v2.json')
+    config_file = open('configs/adults_config.json')
     config = json.load(config_file)
     config_file.close()
     datafly = Datafly(ES_CONNECTOR)

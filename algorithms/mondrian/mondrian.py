@@ -10,23 +10,25 @@ from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
 
-from utils.read_gen_hierarchies import read_gen_hierarchies_from_config
+from utils.config_processor import parse_config
 
 
 class Mondrian(AbstractAlgorithm):
-    def __init__(self, db_connector: MondrianAPI, config):
+    def __init__(self, db_connector: MondrianAPI):
         self.db_connector = db_connector
-        self.k: int = config["k"]
-        self.qid_names: list[str] = config["qid_names"]
-        self.gen_hiers: dict[str, GenTree] = read_gen_hierarchies_from_config(config['gen_hierarchies'])
+        
+        self.k: int
+        self.qid_names: list[str]
+        self.gen_hiers: dict[str, GenTree]
+        self.size_of_dataset: int
+
         self.final_partitions : list[Partition] = []
-        self.size_of_dataset: int = None
 
 
     def get_normalized_width(self, partition: Partition, qid_name: str) -> float:    
         """ Return Normalized width of partition """        
 
-        return partition.attributes[qid_name].width * 1.0 / len(Partition.attr_dict[qid_name])
+        return partition.attributes[qid_name].width * 1.0 / len(Partition.ATTR_METADATA[qid_name])
 
 
     def choose_qid_name(self, partition: Partition) -> str:
@@ -121,7 +123,7 @@ class Mondrian(AbstractAlgorithm):
     def split_categorical_attribute(self, partition: Partition, qid_name: str) -> list[Partition]:
         """ Split categorical attribute using generalization hierarchy """
 
-        node_to_split_at: GenTree = Partition.attr_dict[qid_name].node(partition.attributes[qid_name].gen_value)
+        node_to_split_at: GenTree = Partition.ATTR_METADATA[qid_name].node(partition.attributes[qid_name].gen_value)
 
         # If the node (has no children, and thus) is a leaf, the partitioning is not possible
         if not len(node_to_split_at.children):
@@ -152,7 +154,7 @@ class Mondrian(AbstractAlgorithm):
     def split_partition(self, partition: Partition, qid_name: str):
         """ Split partition and distribute records to different sub-partitions """
 
-        if isinstance(Partition.attr_dict[qid_name], NumRange):
+        if isinstance(Partition.ATTR_METADATA[qid_name], NumRange):
             return self.split_numerical_attribute(partition, qid_name)
         else:
             return self.split_categorical_attribute(partition, qid_name)
@@ -195,30 +197,23 @@ class Mondrian(AbstractAlgorithm):
     def set_up_the_first_partition(self):
         """ Reset all global variables """        
 
-        attributes: dict[str, Attribute] = {}
-        gen_hiers_and_num_ranges: dict[str, NumRange|GenTree] = self.gen_hiers
+        attributes: dict[str, Attribute] = {}        
         
         for attr_name in self.qid_names:
-            root_node_or_num_range: NumRange | GenTree
-
-            if attr_name in self.gen_hiers:
-                root_node_or_num_range = self.gen_hiers[attr_name]            
-            else:            
-                (min, max) = self.db_connector.get_attribute_min_max(attr_name)
-                root_node_or_num_range = NumRange(min, max)
-                gen_hiers_and_num_ranges[attr_name] = root_node_or_num_range
-    
+            root_node_or_num_range = Partition.ATTR_METADATA[attr_name]    
             attributes[attr_name] = Attribute(len(root_node_or_num_range), root_node_or_num_range.value)
     
         count = self.db_connector.get_document_count()
-        whole_partition = Partition(count, attributes)
-
-        Partition.attr_dict = gen_hiers_and_num_ranges
+        whole_partition = Partition(count, attributes)        
         
         return whole_partition
+    
+
+    def initialize(self, config: dict[str, int|dict]):
+        (self.k, self.qid_names, self.gen_hiers, self.size_of_dataset) = parse_config(config, self.db_connector)      
 
     
-    def run(self):
+    def run(self, config: dict[str, int|dict]):
         """
         Basic Mondrian for k-anonymity.
         This fuction support both numeric values and categoric values.
@@ -226,6 +221,8 @@ class Mondrian(AbstractAlgorithm):
         For categoric values, each iterator is a split using the generalization hierarchies.
         The final result is returned in 2-dimensional list.
         """
+
+        self.initialize(config)
 
         whole_partition = self.set_up_the_first_partition()
         self.size_of_dataset = whole_partition.count

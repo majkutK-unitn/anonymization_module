@@ -1,12 +1,12 @@
 from interfaces.abstract_algorithm import AbstractAlgorithm
 from interfaces.datafly_api import DataflyAPI
-from models.attribute import Attribute
 
+from models.attribute import Attribute
 from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
 
-from utils.read_gen_hierarchies import read_gen_hierarchies_from_config_v2
+from utils.config_processor import parse_config
 
 
 class Datafly(AbstractAlgorithm):
@@ -14,6 +14,7 @@ class Datafly(AbstractAlgorithm):
         self.db_connector = db_connector
         self.k: int
         self.qid_names: list[str]
+        self.gen_hiers: dict[str, GenTree]
 
         self.size_of_dataset: int
         
@@ -117,13 +118,19 @@ class Datafly(AbstractAlgorithm):
     def generalize_categorical_attr(self, attr_name: str, unique_values: dict[str, Partition]):
         """ Step one level up in the hierarchy tree """
 
-        root = Partition.attr_dict[attr_name]
+        root = Partition.ATTR_METADATA[attr_name]
 
         for partition in self.final_partitions:
+            new_attribute: Attribute
             current_node = root.node(partition.attributes[attr_name].gen_value)
-            parent_node = current_node.ancestors[0]
 
-            new_attribute = Attribute(len(parent_node), parent_node.value)
+            # The hierarchy trees are not necessarily balanced: in some cases one value might already have been generalized to the root value, therefore it is kept in its original form
+            if current_node.ancestors:
+                parent_node = current_node.ancestors[0]
+                new_attribute = Attribute(len(parent_node), parent_node.value)
+            else:
+                new_attribute = partition.attributes[attr_name]            
+            
             self.merge_generalized_partitions(partition, attr_name, new_attribute, unique_values)
 
 
@@ -145,30 +152,18 @@ class Datafly(AbstractAlgorithm):
         return list(unique_values.values())
     
 
-    def parse_config(self, config: dict[str, int|dict]):
-        self.k = config["k"]
-        self.qid_names: list[str] = list(config["attributes"].keys())
-
-        self.size_of_dataset: int = self.db_connector.get_document_count()
+    def initialize(self, config: dict[str, int|dict]):
+        (self.k, self.qid_names, self.gen_hiers, self.size_of_dataset) = parse_config(config, self.db_connector)
         
         for key, value in config['attributes'].items():
             if "tree" in value:                
                 self.categorical_attr_config[key] = value
             else:
-                self.numerical_attr_config[key] = value
-
-        self.gen_hiers: dict[str, GenTree] = read_gen_hierarchies_from_config_v2(self.categorical_attr_config)
-        Partition.attr_dict = self.gen_hiers.copy()        
-
-        for num_attr_name in self.numerical_attr_config.keys():
-            (min, max) = self.db_connector.get_attribute_min_max(num_attr_name)
-            num_range = NumRange(min, max)
-
-            Partition.attr_dict[num_attr_name] = num_range
+                self.numerical_attr_config[key] = value            
 
     
     def run(self, config: dict[str, int|dict]) -> bool:
-        self.parse_config(config)
+        self.initialize(config)
         self.get_partition_counts()
         
         while sum(map(lambda x: x.count, filter(lambda x: x.count < self.k, self.final_partitions))) > self.k:
@@ -177,7 +172,7 @@ class Datafly(AbstractAlgorithm):
         not_generalized_attributes: dict[str, Attribute] = {}
         for attr_name in self.qid_names:
             if attr_name not in self.final_partitions[0].attributes.keys():
-                node_or_range = Partition.attr_dict[attr_name]                
+                node_or_range = Partition.ATTR_METADATA[attr_name]                
                 not_generalized_attributes[attr_name] = Attribute(len(node_or_range), node_or_range.value)
 
         for partition in self.final_partitions:
@@ -189,7 +184,7 @@ class Datafly(AbstractAlgorithm):
     def get_normalized_width(self, partition: Partition, qid_name: str) -> float:    
         """ Return Normalized width of partition """        
 
-        return partition.attributes[qid_name].width * 1.0 / len(Partition.attr_dict[qid_name])
+        return partition.attributes[qid_name].width * 1.0 / len(Partition.ATTR_METADATA[qid_name])
     
     
     def calculate_ncp(self) -> float:

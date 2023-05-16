@@ -13,7 +13,7 @@ class Partition(object):
         attributes                          key-value pair, where the key is the attribute name and the value is the state of attribute in the current anonymization process
     """
     # TODO: rename to something more useful / at least capitalize
-    attr_dict: dict[str, NumRange|GenTree]
+    ATTR_METADATA: dict[str, NumRange|GenTree]
 
     def __init__(self, count: int, attributes: dict[str, Attribute]):        
         self.count = count

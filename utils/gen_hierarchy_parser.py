@@ -2,19 +2,19 @@ from models.gentree import GenTree
 from models.numrange import NumRange
 
 
-def read_gen_hierarchies(qid_names: list[str]) -> dict[str, NumRange|GenTree]:
+def read_gen_hierarchies_from_text(qid_names: list[str]) -> dict[str, NumRange|GenTree]:
     """ Read genalization hierarchies from gen_hierarchies/*.txt, and store them in qid_dict """
 
     # { key: value} where key is the attribute name, and the value is the root of the hierarchy tree
     qid_dict: dict[str, GenTree] = {}
 
     for name in qid_names:
-        qid_dict[name] = read_gen_hierarchy_file(name)
+        qid_dict[name] = _create_gen_tree_for_attribute(name)
 
     return qid_dict
 
 
-def read_gen_hierarchy_file(treename: str) -> dict[str, GenTree]:
+def _create_gen_tree_for_attribute(treename: str) -> dict[str, GenTree]:
     """ Read the hierarchy tree from the descriptor file """
 
     root = GenTree('*')
@@ -44,36 +44,25 @@ def read_gen_hierarchy_file(treename: str) -> dict[str, GenTree]:
     return root
 
 
-def read_gen_hierarchies_from_config(gen_hierarchies: list) -> dict[str, GenTree]:
-    """ Read the hierarchy tree from the gen_hierarchies attribute of config JSON file """
-
-    qid_dict: dict[str, GenTree] = {}
-
-    for hier in gen_hierarchies:                
-        root = read_child_nodes(hier["tree"], None)
-        qid_dict[hier["name"]] = root
-
-    return qid_dict
-
-def read_gen_hierarchies_from_config_v2(gen_hierarchies: dict) -> dict[str, GenTree]:
+def read_gen_hierarchies_from_json(gen_hierarchies: dict) -> dict[str, GenTree]:
     """ Read the hierarchy tree from the gen_hierarchies attribute of config JSON file """
 
     qid_dict: dict[str, GenTree] = {}
 
     for hier_name, value in gen_hierarchies.items():                
-        root = read_child_nodes(value["tree"], None)
+        root = _get_child_nodes(value["tree"], None)
         qid_dict[hier_name] = root
 
     return qid_dict
 
 
-def read_child_nodes(node, tree_parent: GenTree):
+def _get_child_nodes(node, tree_parent: GenTree):
     is_leaf = not bool(node["children"])        
     tree_node = GenTree(node["value"], tree_parent, is_leaf)
 
     if not is_leaf:
         for child in node["children"]:
-            read_child_nodes(child, tree_node)
+            _get_child_nodes(child, tree_node)
 
     return tree_node
 
