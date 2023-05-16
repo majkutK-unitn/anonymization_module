@@ -146,7 +146,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         must = []
 
         for attr_name in attributes.keys():
-            node_or_range = Partition.attr_dict[attr_name]
+            node_or_range = Partition.ATTR_METADATA[attr_name]
 
             if isinstance(node_or_range, GenTree):
                 leaf_values = []

@@ -29,8 +29,8 @@ def random_testing():
         
     config_file.close()
 
-    Partition.attr_dict = y
-    Partition.attr_dict["age"] = NumRange(10, 100)
+    Partition.ATTR_METADATA = y
+    Partition.ATTR_METADATA["age"] = NumRange(10, 100)
 
     partition = Partition(21, {
         "age": Attribute(20, "30,50", True),
@@ -56,8 +56,8 @@ def __test__map_attributes_to_query():
         
     config_file.close()
 
-    Partition.attr_dict = y
-    Partition.attr_dict["age"] = NumRange(10, 100)
+    Partition.ATTR_METADATA = y
+    Partition.ATTR_METADATA["age"] = NumRange(10, 100)
 
     partition = Partition(21, {
         "age": Attribute(20, "10,20", True),
