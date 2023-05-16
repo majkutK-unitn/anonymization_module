@@ -2,6 +2,7 @@ from interfaces.abstract_algorithm import AbstractAlgorithm
 from interfaces.datafly_api import DataflyAPI
 
 from models.attribute import Attribute
+from models.config import Config
 from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
@@ -12,13 +13,9 @@ from utils.config_processor import parse_config
 class Datafly(AbstractAlgorithm):
     def __init__(self, db_connector: DataflyAPI):
         self.db_connector = db_connector
-        self.k: int
-        self.qid_names: list[str]
-        self.gen_hiers: dict[str, GenTree]
-
-        self.size_of_dataset: int
         
         self.final_partitions : list[Partition] = []
+
         self.numerical_attr_config = {}
         self.categorical_attr_config = {}
 
@@ -46,16 +43,16 @@ class Datafly(AbstractAlgorithm):
     def generate_initial_partitions(self):
         temp_partitions: list[dict[str, Attribute]] = [{}]
 
-        for attr_name, value in self.numerical_attr_config.items():
+        for attr_name, value in Config.numerical_attr_config.items():
             if value["datafly_num_of_buckets"] > 0:
                 num_ranges = self.db_connector.spread_attribute_into_uniform_buckets(attr_name, value["datafly_num_of_buckets"])
 
                 temp_partitions = self.generate_new_partition_combinations(temp_partitions, attr_name, num_ranges)
                 
 
-        for attr_name, value in self.categorical_attr_config.items():
+        for attr_name, value in Config.categorical_attr_config.items():
             if value["datafly_init_level"] > 0:
-                nodes = self.gen_hiers[attr_name].nodes_on_level(value["datafly_init_level"])
+                nodes = Config.gen_hiers[attr_name].nodes_on_level(value["datafly_init_level"])
 
                 temp_partitions = self.generate_new_partition_combinations(temp_partitions, attr_name, nodes)
 
@@ -118,7 +115,7 @@ class Datafly(AbstractAlgorithm):
     def generalize_categorical_attr(self, attr_name: str, unique_values: dict[str, Partition]):
         """ Step one level up in the hierarchy tree """
 
-        root = Partition.ATTR_METADATA[attr_name]
+        root = Config.attr_metadata[attr_name]
 
         for partition in self.final_partitions:
             new_attribute: Attribute
@@ -144,7 +141,7 @@ class Datafly(AbstractAlgorithm):
 
         unique_values: dict[str, Partition] = {}
 
-        if attr_with_most_distinct[0] in self.numerical_attr_config.keys():
+        if attr_with_most_distinct[0] in Config.numerical_attr_config.keys():
             self.generalize_numerical_attr(attr_with_most_distinct[0], unique_values)
         else:
             self.generalize_categorical_attr(attr_with_most_distinct[0], unique_values)
@@ -153,7 +150,7 @@ class Datafly(AbstractAlgorithm):
     
 
     def initialize(self, config: dict[str, int|dict]):
-        (self.k, self.qid_names, self.gen_hiers, self.size_of_dataset) = parse_config(config, self.db_connector)
+        parse_config(config, self.db_connector)
         
         for key, value in config['attributes'].items():
             if "tree" in value:                
@@ -166,25 +163,25 @@ class Datafly(AbstractAlgorithm):
         self.initialize(config)
         self.get_partition_counts()
         
-        while sum(map(lambda x: x.count, filter(lambda x: x.count < self.k, self.final_partitions))) > self.k:
+        while sum(map(lambda x: x.count, filter(lambda x: x.count < Config.k, self.final_partitions))) > Config.k:
             self.final_partitions = self.generalize()
 
         not_generalized_attributes: dict[str, Attribute] = {}
-        for attr_name in self.qid_names:
+        for attr_name in Config.qid_names:
             if attr_name not in self.final_partitions[0].attributes.keys():
-                node_or_range = Partition.ATTR_METADATA[attr_name]                
+                node_or_range = Config.attr_metadata[attr_name]                
                 not_generalized_attributes[attr_name] = Attribute(len(node_or_range), node_or_range.value)
 
         for partition in self.final_partitions:
             partition.attributes.update(not_generalized_attributes)        
 
-        return self.final_partitions
+        return self.db_connector.push_ecs(self.final_partitions)
     
 
     def get_normalized_width(self, partition: Partition, qid_name: str) -> float:    
         """ Return Normalized width of partition """        
 
-        return partition.attributes[qid_name].width * 1.0 / len(Partition.ATTR_METADATA[qid_name])
+        return partition.attributes[qid_name].width * 1.0 / len(Config.attr_metadata[qid_name])
     
     
     def calculate_ncp(self) -> float:
@@ -192,15 +189,15 @@ class Datafly(AbstractAlgorithm):
 
         for partition in self.final_partitions:
             r_ncp = 0.0
-            for attr_name in self.qid_names:
+            for attr_name in Config.qid_names:
                 r_ncp += self.get_normalized_width(partition, attr_name)
 
             r_ncp *= partition.count
             ncp += r_ncp
 
         # covert to NCP percentage
-        ncp /= len(self.qid_names)
-        ncp /= self.size_of_dataset
+        ncp /= len(Config.qid_names)
+        ncp /= Config.size_of_dataset
         ncp *= 100
 
         return ncp

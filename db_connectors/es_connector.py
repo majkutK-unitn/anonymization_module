@@ -8,6 +8,7 @@ from models.attribute import Attribute
 from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
+from models.config import Config
 
 from interfaces.datafly_api import DataflyAPI
 from interfaces.mondrian_api import MondrianAPI
@@ -146,7 +147,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         must = []
 
         for attr_name in attributes.keys():
-            node_or_range = Partition.ATTR_METADATA[attr_name]
+            node_or_range = Config.attr_metadata[attr_name]
 
             if isinstance(node_or_range, GenTree):
                 leaf_values = []
