@@ -12,12 +12,8 @@ from utils.config_processor import parse_config
 
 class Datafly(AbstractAlgorithm):
     def __init__(self, db_connector: DataflyAPI):
-        self.db_connector = db_connector
-        
+        self.db_connector = db_connector        
         self.final_partitions : list[Partition] = []
-
-        self.numerical_attr_config = {}
-        self.categorical_attr_config = {}
 
 
     def combine_attribute_with_existing_partitions(self, existing_partitions: list[dict[str, Attribute]], attr_name: str, range_or_node: GenTree | NumRange):
@@ -56,12 +52,10 @@ class Datafly(AbstractAlgorithm):
 
                 temp_partitions = self.generate_new_partition_combinations(temp_partitions, attr_name, nodes)
 
-        return temp_partitions
+        self.get_partition_counts(temp_partitions)
 
 
-    def get_partition_counts(self):
-        attributes_of_init_partitions = self.generate_initial_partitions()
-        
+    def get_partition_counts(self, attributes_of_init_partitions: list[dict[str, Attribute]]):                
         for attributes in attributes_of_init_partitions:
             count = self.db_connector.get_document_count(attributes)
             if count != 0:
@@ -77,7 +71,7 @@ class Datafly(AbstractAlgorithm):
             unique_values[str(partition)] = partition
 
 
-    def  generalize_numerical_attr(self, attr_name: str, unique_values: dict[str, Partition]):
+    def generalize_numerical_attr(self, attr_name: str, unique_values: dict[str, Partition]):
         """ Merge adjacent partitions together. If there is an odd number of partitions, leave the last one as is. """
 
         attr_values = list(set(map(lambda p: p.attributes[attr_name].gen_value, self.final_partitions)))
@@ -126,7 +120,7 @@ class Datafly(AbstractAlgorithm):
                 parent_node = current_node.ancestors[0]
                 new_attribute = Attribute(len(parent_node), parent_node.value)
             else:
-                new_attribute = partition.attributes[attr_name]            
+                new_attribute = partition.attributes[attr_name]
             
             self.merge_generalized_partitions(partition, attr_name, new_attribute, unique_values)
 
@@ -150,18 +144,12 @@ class Datafly(AbstractAlgorithm):
     
 
     def initialize(self, config: dict[str, int|dict]):
-        parse_config(config, self.db_connector)
-        
-        for key, value in config['attributes'].items():
-            if "tree" in value:                
-                self.categorical_attr_config[key] = value
-            else:
-                self.numerical_attr_config[key] = value            
+        parse_config(config, self.db_connector)     
 
     
     def run(self, config: dict[str, int|dict]) -> bool:
         self.initialize(config)
-        self.get_partition_counts()
+        self.generate_initial_partitions()
         
         while sum(map(lambda x: x.count, filter(lambda x: x.count < Config.k, self.final_partitions))) > Config.k:
             self.final_partitions = self.generalize()
