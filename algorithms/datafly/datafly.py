@@ -14,6 +14,7 @@ class Datafly(AbstractAlgorithm):
         self.db_connector = db_connector
         self.k: int
         self.qid_names: list[str]
+        self.gen_hiers: dict[str, GenTree]
 
         self.size_of_dataset: int
         
@@ -147,9 +148,9 @@ class Datafly(AbstractAlgorithm):
 
     def parse_config(self, config: dict[str, int|dict]):
         self.k = config["k"]
-        self.qid_names: list[str] = list(config["attributes"].keys())
+        self.qid_names = list(config["attributes"].keys())
 
-        self.size_of_dataset: int = self.db_connector.get_document_count()
+        self.size_of_dataset = self.db_connector.get_document_count()
         
         for key, value in config['attributes'].items():
             if "tree" in value:                
@@ -157,7 +158,7 @@ class Datafly(AbstractAlgorithm):
             else:
                 self.numerical_attr_config[key] = value
 
-        self.gen_hiers: dict[str, GenTree] = read_gen_hierarchies_from_config_v2(self.categorical_attr_config)
+        self.gen_hiers = read_gen_hierarchies_from_config_v2(self.categorical_attr_config)
         Partition.attr_dict = self.gen_hiers.copy()        
 
         for num_attr_name in self.numerical_attr_config.keys():
