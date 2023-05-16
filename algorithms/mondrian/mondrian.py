@@ -10,17 +10,19 @@ from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
 
-from utils.read_gen_hierarchies import read_gen_hierarchies_from_config
+from utils.read_gen_hierarchies import read_gen_hierarchies_from_config, read_gen_hierarchies_from_config_v2
 
 
 class Mondrian(AbstractAlgorithm):
-    def __init__(self, db_connector: MondrianAPI, config):
+    def __init__(self, db_connector: MondrianAPI):
         self.db_connector = db_connector
-        self.k: int = config["k"]
-        self.qid_names: list[str] = config["qid_names"]
-        self.gen_hiers: dict[str, GenTree] = read_gen_hierarchies_from_config(config['gen_hierarchies'])
+        
+        self.k: int
+        self.qid_names: list[str]
+        self.gen_hiers: dict[str, GenTree]
+        self.size_of_dataset: int
+
         self.final_partitions : list[Partition] = []
-        self.size_of_dataset: int = None
 
 
     def get_normalized_width(self, partition: Partition, qid_name: str) -> float:    
@@ -216,9 +218,18 @@ class Mondrian(AbstractAlgorithm):
         Partition.attr_dict = gen_hiers_and_num_ranges
         
         return whole_partition
+    
+    def parse_config(self, config: dict[str, int|dict]):
+        self.k = config["k"]
+        self.qid_names: list[str] = list(config["attributes"].keys())
+
+        self.size_of_dataset: int = self.db_connector.get_document_count()        
+
+        cat_attrs_from_config = dict(filter(lambda attr: "tree" in attr[1], config['attributes'].items()))
+        self.gen_hiers = read_gen_hierarchies_from_config_v2(cat_attrs_from_config)
 
     
-    def run(self):
+    def run(self, config: dict[str, int|dict]):
         """
         Basic Mondrian for k-anonymity.
         This fuction support both numeric values and categoric values.
@@ -226,6 +237,8 @@ class Mondrian(AbstractAlgorithm):
         For categoric values, each iterator is a split using the generalization hierarchies.
         The final result is returned in 2-dimensional list.
         """
+
+        self.parse_config(config)
 
         whole_partition = self.set_up_the_first_partition()
         self.size_of_dataset = whole_partition.count
