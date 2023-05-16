@@ -47,6 +47,24 @@ class GenTree(object):
             return self.covered_nodes[value]
         except:
             return None
+        
+    def values_on_level(self, level: int) -> list[str]:
+        values = list(map(lambda filtered_node: filtered_node.value, filter(lambda node: node.level == level, self.covered_nodes.values())))
+
+        if not values:
+            raise Exception("Level does not exist in the tree")
+        
+        return values
+    
+
+    def nodes_on_level(self, level: int) -> list[GenTree]:
+        nodes = list(filter(lambda node: node.level == level or (node.level < level and not node.children), self.covered_nodes.values()))
+
+        if not nodes:
+            raise Exception("Level does not exist in the tree")
+        
+        return nodes
+    
 
     def __len__(self):
         return self.num_of_leaves

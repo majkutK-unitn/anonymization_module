@@ -6,14 +6,17 @@ from elasticsearch import Elasticsearch
 
 from models.attribute import Attribute
 from models.gentree import GenTree
+from models.numrange import NumRange
 from models.partition import Partition
+
+from interfaces.datafly_api import DataflyAPI
 from interfaces.mondrian_api import MondrianAPI
 
 # TODO:
 #   (1) implement push_ecs()
 #   (2) refactor map_attributes_to_query
 #   (3) remove the int() casts so that the project can handle floats as well (with the adult dataset we only need ints)
-class EsConnector(MondrianAPI):
+class EsConnector(MondrianAPI, DataflyAPI):
 
     def __init__(self):
         API_KEY_ID = getenv('ES_API_KEY_ID')
@@ -29,7 +32,6 @@ class EsConnector(MondrianAPI):
 
     def push_ecs(ecs: list) -> bool:
         pass
-
 
     def get_document_count(self, attributes: dict[str, Attribute] = None) -> int:    
         query = None
@@ -57,6 +59,10 @@ class EsConnector(MondrianAPI):
 
         return int(res["aggregations"][f"{attr_name}_min"]['value']), int(res["aggregations"][f"{attr_name}_max"]['value'])
 
+
+# ------------------------------
+# >>    Mondrian API - BEGIN
+# ------------------------------    
 
     def get_attribute_median_and_next_unique_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[int, int]:
         """ Find the middle of the partition and the next unique value that follows the median """
@@ -91,6 +97,50 @@ class EsConnector(MondrianAPI):
 
         return median, next_unique
     
+
+# ------------------------------
+# <<    Mondrian API - END
+# ------------------------------
+
+
+
+# ------------------------------
+# >>    DataFly API - BEGIN
+# ------------------------------
+    
+    def spread_attribute_into_uniform_buckets(self, attr_name: str, num_of_buckets: int) -> list[NumRange]:
+        interval_size = int(100 / num_of_buckets)
+        percentiles = list(range(interval_size,100,interval_size))
+
+        aggs = {            
+            f"{attr_name}_percentiles": { "percentiles": { "field": attr_name, "percents": percentiles } }            
+        }
+
+        res = self.es_client.search(index=self.INDEX_NAME, size=0, aggs=aggs)
+
+        bucket_upper_bounds = list(map(lambda x: int(x), res["aggregations"][f"{attr_name}_percentiles"]["values"].values()))
+        min, max = self.get_attribute_min_max(attr_name)
+
+        num_ranges: list[NumRange] = []
+
+        for i, bound in enumerate(bucket_upper_bounds + [max]):
+            if i == 0:
+                num_ranges.append(NumRange(min, bound))                
+                continue
+
+            if bucket_upper_bounds[i-1] == bound:
+                num_ranges.append(NumRange(bound, bound))
+            else:
+                num_ranges.append(NumRange(bucket_upper_bounds[i-1] + 1, bound))            
+
+        return num_ranges
+    
+
+# ------------------------------
+# <<    DataFly API - END
+# ------------------------------
+
+
 
     def map_attributes_to_query(self, attributes: dict[str, Attribute]):
         must = []

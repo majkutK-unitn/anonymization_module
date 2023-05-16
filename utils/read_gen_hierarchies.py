@@ -55,6 +55,17 @@ def read_gen_hierarchies_from_config(gen_hierarchies: list) -> dict[str, GenTree
 
     return qid_dict
 
+def read_gen_hierarchies_from_config_v2(gen_hierarchies: dict) -> dict[str, GenTree]:
+    """ Read the hierarchy tree from the gen_hierarchies attribute of config JSON file """
+
+    qid_dict: dict[str, GenTree] = {}
+
+    for hier_name, value in gen_hierarchies.items():                
+        root = read_child_nodes(value["tree"], None)
+        qid_dict[hier_name] = root
+
+    return qid_dict
+
 
 def read_child_nodes(node, tree_parent: GenTree):
     is_leaf = not bool(node["children"])        
