@@ -200,12 +200,10 @@ class EsConnector(MondrianAPI, DataflyAPI):
 
 # ------------------------------
 # >>    Mondrian API - BEGIN
-# ------------------------------    
+# ------------------------------
 
-    def get_attribute_median_and_next_unique_value(self, attributes: dict[str, Attribute], attr_name: str) -> Tuple[int, int]:
-        """ Find the middle of the partition and the next unique value that follows the median """
-        
-        median_query = self.map_attributes_to_query(attributes)        
+    def get_median(self, attr_name: str, attributes: dict[str, Attribute]) -> int:
+        median_query = self.map_attributes_to_query(attributes)
 
         median_aggs = {            
             f"{attr_name}_median": { "percentiles": { "field": attr_name, "percents": [ 50 ] }},            
@@ -213,27 +211,48 @@ class EsConnector(MondrianAPI, DataflyAPI):
 
         median_res = self.es_client.search(index=self.INDEX_NAME, query=median_query, size=0, aggs=median_aggs)
 
-        if list(median_res["aggregations"][f"{attr_name}_median"]['values'].values())[0] is None:
-            return None, None
+        median_value = list(median_res["aggregations"][f"{attr_name}_median"]['values'].values())[0]
 
-        median = int(list(median_res["aggregations"][f"{attr_name}_median"]['values'].values())[0])
+        if median_value is None:
+            raise Exception(f"Median request return 'None' for attribute '{attr_name}' and query {str(median_query)}")
+        
+        return int(median_value)
+    
 
-        next_unique_query = median_query.copy()
-        next_unique_query["bool"]["must"].append({"range": {
-                        attr_name: {
-                            "gt": median
-                            }}
-        })
+    def get_unique_next_or_prev_value(self, direction: str, attributes: dict[str, Attribute], attr_name: str, value: int):
+        assert direction in ["NEXT", "PREVIOUS"]
 
-        next_unique_aggs = {            
-            f"{attr_name}_min_in_partition": { "min": { "field": attr_name } },            
-        }
+        (operator, func) = ("gt", "min") if direction == "NEXT" else ("lt", "max")
 
-        next_unique_res = self.es_client.search(index=self.INDEX_NAME, query=next_unique_query, size=0, aggs=next_unique_aggs)
+        query = self.map_attributes_to_query(attributes)
+        query["bool"]["must"].append({"range": { attr_name: { operator: value } } })
 
-        next_unique = None if next_unique_res["aggregations"][f"{attr_name}_min_in_partition"]['value'] is None else int(next_unique_res["aggregations"][f"{attr_name}_min_in_partition"]['value'])
+        aggs = {f"{attr_name}_{func}_in_partition": { func: { "field": attr_name } }}
 
-        return median, next_unique
+        unique_res = self.es_client.search(index=self.INDEX_NAME, query=query, aggs=aggs, size=0)
+        unique_res_val = unique_res["aggregations"][f"{attr_name}_{func}_in_partition"]['value']
+
+        # TODO: throw exception instead
+        return int(unique_res_val) if unique_res_val is not None else None
+
+
+    def get_value_to_split_at_and_next_unique_value(self, attr_name: str, attributes: dict[str, Attribute]) -> Tuple[int, int]:
+        """ Find the middle of the partition and the next unique value that follows the median """
+
+        median = self.get_median(attr_name, attributes)
+        (_, max_value) = self.get_attribute_min_max(attr_name, attributes)
+
+        value_to_split_at: int
+        next_unique_value: int
+
+        if median == max_value:
+            value_to_split_at = self.get_unique_next_or_prev_value("PREVIOUS", attributes, attr_name, max_value)
+            next_unique_value = median
+        else:
+            value_to_split_at = median
+            next_unique_value = self.get_unique_next_or_prev_value("NEXT", attributes, attr_name, median)
+
+        return value_to_split_at, next_unique_value    
     
 
 # ------------------------------
