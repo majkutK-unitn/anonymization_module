@@ -110,18 +110,19 @@ class Datafly(AbstractAlgorithm):
         """ Step one level up in the hierarchy tree """
 
         root = Config.attr_metadata[attr_name]
+        curr_max_level_in_hier_tree = max(map(lambda p: root.node(p.attributes[attr_name].gen_value).level, self.final_partitions))
 
         for partition in self.final_partitions:
             new_attribute: Attribute
             current_node = root.node(partition.attributes[attr_name].gen_value)
 
-            # The hierarchy trees are not necessarily balanced: in some cases one value might already have been generalized to the root value, therefore it is kept in its original form
-            if current_node.ancestors:
+            # The hierarchy trees are not necessarily balanced. To avoid generalizing one path to the root, wait for all paths to get to the next level
+            if current_node.level < curr_max_level_in_hier_tree:
+                new_attribute = partition.attributes[attr_name]
+            else:
                 parent_node = current_node.ancestors[0]
                 new_attribute = Attribute(len(parent_node), parent_node.value)
-            else:
-                new_attribute = partition.attributes[attr_name]
-            
+
             self.merge_generalized_partitions(partition, attr_name, new_attribute, unique_values)
 
 
