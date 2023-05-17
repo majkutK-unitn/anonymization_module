@@ -1,11 +1,10 @@
-import time
-
 from typing import Tuple
 
 from interfaces.abstract_algorithm import AbstractAlgorithm
 from interfaces.mondrian_api import MondrianAPI
 
 from models.attribute import Attribute
+from models.config import Config
 from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
@@ -16,11 +15,6 @@ from utils.config_processor import parse_config
 class Mondrian(AbstractAlgorithm):
     def __init__(self, db_connector: MondrianAPI):
         self.db_connector = db_connector
-        
-        self.k: int
-        self.qid_names: list[str]
-        self.gen_hiers: dict[str, GenTree]
-        self.size_of_dataset: int
 
         self.final_partitions : list[Partition] = []
 
@@ -28,7 +22,7 @@ class Mondrian(AbstractAlgorithm):
     def get_normalized_width(self, partition: Partition, qid_name: str) -> float:    
         """ Return Normalized width of partition """        
 
-        return partition.attributes[qid_name].width * 1.0 / len(Partition.ATTR_METADATA[qid_name])
+        return partition.attributes[qid_name].width * 1.0 / len(Config.attr_metadata[qid_name])
 
 
     def choose_qid_name(self, partition: Partition) -> str:
@@ -51,38 +45,9 @@ class Mondrian(AbstractAlgorithm):
         return qid_name
 
 
-    def split_numerical_value(self, numeric_value: str, value_to_split_at: int, next_unique_value: int) -> Tuple[str, str]:
-        """ Split numeric value along value_to_split_at and return sub ranges """
+    def update_partition(self, partition: Partition, qid_name: str, min_value: int, max_value: int):
+        ''' As cuts along other dimensions are done in this partition, the min-max of the partition along other dimensions migth change and needs to be updated '''
 
-        range_min_and_max = numeric_value.split(',')
-        # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
-        if len(range_min_and_max) <= 1:
-            return range_min_and_max[0], range_min_and_max[0]    
-        else:
-            min_value = int(range_min_and_max[0])
-            max_value = int(range_min_and_max[1])
-            # Create two new partitions using the [mix, value_to_split_at] and [value_to_split_at, max] new ranges
-            if min_value == value_to_split_at:
-                l_range = str(min_value)
-            else:
-                l_range = f"{min_value},{value_to_split_at}"
-            if max_value == next_unique_value:
-                r_range = str(max_value)
-            else:
-                r_range = f"{next_unique_value},{max_value}"
-                
-            return l_range, r_range
-
-
-    def split_numerical_attribute(self, partition: Partition, qid_name: str) -> list[Partition]:
-        """ Split numeric attribute by along the median, creating two new sub-partitions """
-
-        sub_partitions: list[Partition] = []
-        
-        (median, next_unique_value) = self.db_connector.get_attribute_median_and_next_unique_value(partition.attributes, qid_name)
-        (min_value, max_value) = self.db_connector.get_attribute_min_max(qid_name, partition.attributes)
-
-        # As cuts along other dimensions are done, the min-max of the partition along other dimensions migth change and needs to be updated
         updated_width = max_value - min_value
         updated_gen_value: str
 
@@ -90,40 +55,47 @@ class Mondrian(AbstractAlgorithm):
             updated_gen_value = str(min_value)
         else:
             updated_gen_value = f"{min_value},{max_value}"
-
-        # The same Attribute object should not be directly manipulated, as other Partitions might also rely on it. A fresh one must be created.
+            
         partition.attributes[qid_name] = Attribute(updated_width, updated_gen_value)
 
-        if median is None or next_unique_value is None:
-            return []
 
-        l_attributes = partition.attributes.copy()
-        r_attributes = partition.attributes.copy()
-
-        (l_gen_value, r_gen_value) = self.split_numerical_value(partition.attributes[qid_name].gen_value, median, next_unique_value)
+    def create_new_partition_from(self, partition: Partition, qid_name: str, min_value: int, max_value: int):
+        attributes = partition.attributes.copy()                
         
-        l_width = median - min_value    
-        r_width = max_value - next_unique_value
+        gen_value = f"{min_value},{max_value}" if min_value != max_value else str(min_value)
+        width = max_value - min_value
 
-        l_attributes[qid_name] = Attribute(l_width, l_gen_value)
-        r_attributes[qid_name] = Attribute(r_width, r_gen_value)
+        attributes[qid_name] = Attribute(width, gen_value, min_value != max_value)        
 
-        l_count = self.db_connector.get_document_count(l_attributes)
-        r_count = self.db_connector.get_document_count(r_attributes)
+        count = self.db_connector.get_document_count(attributes)
 
-        if l_count < self.k or r_count < self.k:
-            return []
+        if count < Config.k:
+            raise Exception("Invalid split, partition smaller than k")
+        
+        return Partition(count, attributes)
 
-        sub_partitions.append(Partition(l_count, l_attributes))
-        sub_partitions.append(Partition(r_count, r_attributes))
 
-        return sub_partitions
+    def split_numerical_attribute(self, partition: Partition, qid_name: str) -> list[Partition]:
+        """ Split numeric attribute by along the median, creating two new sub-partitions """
+        
+        (median, next_unique_value) = self.db_connector.get_value_to_split_at_and_next_unique_value(qid_name, partition.attributes)
+        (min_value, max_value) = self.db_connector.get_attribute_min_max(qid_name, partition.attributes)
+
+        self.update_partition(partition, qid_name, min_value, max_value)
+
+        try:            
+            return [
+                self.create_new_partition_from(partition, qid_name, min_value=min_value, max_value=median),
+                self.create_new_partition_from(partition, qid_name, min_value=next_unique_value, max_value=max_value),
+            ]
+        except:
+            return []           
 
 
     def split_categorical_attribute(self, partition: Partition, qid_name: str) -> list[Partition]:
         """ Split categorical attribute using generalization hierarchy """
 
-        node_to_split_at: GenTree = Partition.ATTR_METADATA[qid_name].node(partition.attributes[qid_name].gen_value)
+        node_to_split_at: GenTree = Config.attr_metadata[qid_name].node(partition.attributes[qid_name].gen_value)
 
         # If the node (has no children, and thus) is a leaf, the partitioning is not possible
         if not len(node_to_split_at.children):
@@ -140,7 +112,7 @@ class Mondrian(AbstractAlgorithm):
             if count_covered_by_child == 0:
                 continue
 
-            if count_covered_by_child < self.k:
+            if count_covered_by_child < Config.k:
                 return []
             
             sub_partitions.append(Partition(count_covered_by_child, generalized_attrs))
@@ -154,7 +126,7 @@ class Mondrian(AbstractAlgorithm):
     def split_partition(self, partition: Partition, qid_name: str):
         """ Split partition and distribute records to different sub-partitions """
 
-        if isinstance(Partition.ATTR_METADATA[qid_name], NumRange):
+        if isinstance(Config.attr_metadata[qid_name], NumRange):
             return self.split_numerical_attribute(partition, qid_name)
         else:
             return self.split_categorical_attribute(partition, qid_name)
@@ -164,7 +136,7 @@ class Mondrian(AbstractAlgorithm):
         """ Check if the partition can be further split while satisfying k-anonymity """
 
         # The sum of all the boolean values is True, if any of the attributes is splittable
-        if partition.count >= 2 * self.k and sum(map(lambda part: part.split_allowed, partition.attributes.values())):
+        if partition.count >= 2 * Config.k and sum(map(lambda part: part.split_allowed, partition.attributes.values())):
             return True
 
         return False
@@ -199,21 +171,20 @@ class Mondrian(AbstractAlgorithm):
 
         attributes: dict[str, Attribute] = {}        
         
-        for attr_name in self.qid_names:
-            root_node_or_num_range = Partition.ATTR_METADATA[attr_name]    
+        for attr_name in Config.qid_names:
+            root_node_or_num_range = Config.attr_metadata[attr_name]    
             attributes[attr_name] = Attribute(len(root_node_or_num_range), root_node_or_num_range.value)
-    
-        count = self.db_connector.get_document_count()
-        whole_partition = Partition(count, attributes)        
+            
+        whole_partition = Partition(Config.size_of_dataset, attributes)        
         
         return whole_partition
     
 
     def initialize(self, config: dict[str, int|dict]):
-        (self.k, self.qid_names, self.gen_hiers, self.size_of_dataset) = parse_config(config, self.db_connector)      
+        parse_config(config, self.db_connector)      
 
     
-    def run(self, config: dict[str, int|dict]):
+    def run(self, config: dict[str, int|dict]) -> bool:
         """
         Basic Mondrian for k-anonymity.
         This fuction support both numeric values and categoric values.
@@ -224,15 +195,14 @@ class Mondrian(AbstractAlgorithm):
 
         self.initialize(config)
 
-        whole_partition = self.set_up_the_first_partition()
-        self.size_of_dataset = whole_partition.count
+        whole_partition = self.set_up_the_first_partition()        
 
         self.anonymize(whole_partition)
 
         if sum(map(lambda partition: partition.count, self.final_partitions)) != whole_partition.count:        
             raise Exception("Losing records during anonymization")
 
-        return self.final_partitions
+        return self.db_connector.push_ecs(self.final_partitions)
     
 
     def calculate_ncp(self):
@@ -240,15 +210,15 @@ class Mondrian(AbstractAlgorithm):
 
         for partition in self.final_partitions:
             r_ncp = 0.0
-            for attr_name in self.qid_names:
+            for attr_name in Config.qid_names:
                 r_ncp += self.get_normalized_width(partition, attr_name)
 
             r_ncp *= partition.count
             ncp += r_ncp
 
         # covert to NCP percentage
-        ncp /= len(self.qid_names)
-        ncp /= self.size_of_dataset
+        ncp /= len(Config.qid_names)
+        ncp /= Config.size_of_dataset
         ncp *= 100
 
         return ncp
