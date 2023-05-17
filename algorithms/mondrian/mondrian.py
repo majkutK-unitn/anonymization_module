@@ -68,15 +68,9 @@ class Mondrian(AbstractAlgorithm):
             return l_range, r_range
 
 
-    def split_numerical_attribute(self, partition: Partition, qid_name: str) -> list[Partition]:
-        """ Split numeric attribute by along the median, creating two new sub-partitions """
+    def update_partition(self, partition: Partition, qid_name: str, min_value: int, max_value: int):
+        ''' As cuts along other dimensions are done in this partition, the min-max of the partition along other dimensions migth change and needs to be updated '''
 
-        sub_partitions: list[Partition] = []
-        
-        (median, next_unique_value) = self.db_connector.get_attribute_median_and_next_unique_value(partition.attributes, qid_name)
-        (min_value, max_value) = self.db_connector.get_attribute_min_max(qid_name, partition.attributes)
-
-        # As cuts along other dimensions are done, the min-max of the partition along other dimensions migth change and needs to be updated
         updated_width = max_value - min_value
         updated_gen_value: str
 
@@ -84,34 +78,45 @@ class Mondrian(AbstractAlgorithm):
             updated_gen_value = str(min_value)
         else:
             updated_gen_value = f"{min_value},{max_value}"
-
-        # The same Attribute object should not be directly manipulated, as other Partitions might also rely on it. A fresh one must be created.
+            
         partition.attributes[qid_name] = Attribute(updated_width, updated_gen_value)
+
+
+    def create_new_partition_from(self, partition: Partition, qid_name: str, gen_value: str, min_value: int, max_value: int):
+        attributes = partition.attributes.copy()                
+        
+        width = max_value - min_value
+
+        attributes[qid_name] = Attribute(width, gen_value)        
+
+        count = self.db_connector.get_document_count(attributes)
+
+        if count < Config.k:
+            raise Exception("Invalid split, partition smaller than k")
+        
+        return Partition(count, attributes)
+
+
+    def split_numerical_attribute(self, partition: Partition, qid_name: str) -> list[Partition]:
+        """ Split numeric attribute by along the median, creating two new sub-partitions """
+        
+        (median, next_unique_value) = self.db_connector.get_attribute_median_and_next_unique_value(partition.attributes, qid_name)
+        (min_value, max_value) = self.db_connector.get_attribute_min_max(qid_name, partition.attributes)
+
+        self.update_partition(partition, qid_name, min_value, max_value)
 
         if median is None or next_unique_value is None:
             return []
-
-        l_attributes = partition.attributes.copy()
-        r_attributes = partition.attributes.copy()
-
-        (l_gen_value, r_gen_value) = self.split_numerical_value(partition.attributes[qid_name].gen_value, median, next_unique_value)
         
-        l_width = median - min_value    
-        r_width = max_value - next_unique_value
+        try:
+            (left_gen_value, right_gen_value) = self.split_numerical_value(partition.attributes[qid_name].gen_value, median, next_unique_value)
 
-        l_attributes[qid_name] = Attribute(l_width, l_gen_value)
-        r_attributes[qid_name] = Attribute(r_width, r_gen_value)
-
-        l_count = self.db_connector.get_document_count(l_attributes)
-        r_count = self.db_connector.get_document_count(r_attributes)
-
-        if l_count < Config.k or r_count < Config.k:
-            return []
-
-        sub_partitions.append(Partition(l_count, l_attributes))
-        sub_partitions.append(Partition(r_count, r_attributes))
-
-        return sub_partitions
+            return [
+                self.create_new_partition_from(partition, qid_name, left_gen_value, min_value=min_value, max_value=median),
+                self.create_new_partition_from(partition, qid_name, right_gen_value, min_value=next_unique_value, max_value=max_value),
+            ]
+        except:
+            return []           
 
 
     def split_categorical_attribute(self, partition: Partition, qid_name: str) -> list[Partition]:
