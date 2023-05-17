@@ -45,29 +45,6 @@ class Mondrian(AbstractAlgorithm):
         return qid_name
 
 
-    def split_numerical_value(self, numeric_value: str, value_to_split_at: int, next_unique_value: int) -> Tuple[str, str]:
-        """ Split numeric value along value_to_split_at and return sub ranges """
-
-        range_min_and_max = numeric_value.split(',')
-        # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
-        if len(range_min_and_max) <= 1:
-            return range_min_and_max[0], range_min_and_max[0]    
-        else:
-            min_value = int(range_min_and_max[0])
-            max_value = int(range_min_and_max[1])
-            # Create two new partitions using the [mix, value_to_split_at] and [value_to_split_at, max] new ranges
-            if min_value == value_to_split_at:
-                l_range = str(min_value)
-            else:
-                l_range = f"{min_value},{value_to_split_at}"
-            if max_value == next_unique_value:
-                r_range = str(max_value)
-            else:
-                r_range = f"{next_unique_value},{max_value}"
-                
-            return l_range, r_range
-
-
     def update_partition(self, partition: Partition, qid_name: str, min_value: int, max_value: int):
         ''' As cuts along other dimensions are done in this partition, the min-max of the partition along other dimensions migth change and needs to be updated '''
 
@@ -82,12 +59,13 @@ class Mondrian(AbstractAlgorithm):
         partition.attributes[qid_name] = Attribute(updated_width, updated_gen_value)
 
 
-    def create_new_partition_from(self, partition: Partition, qid_name: str, gen_value: str, min_value: int, max_value: int):
+    def create_new_partition_from(self, partition: Partition, qid_name: str, min_value: int, max_value: int):
         attributes = partition.attributes.copy()                
         
+        gen_value = f"{min_value},{max_value}" if min_value != max_value else str(min_value)
         width = max_value - min_value
 
-        attributes[qid_name] = Attribute(width, gen_value)        
+        attributes[qid_name] = Attribute(width, gen_value, min_value != max_value)        
 
         count = self.db_connector.get_document_count(attributes)
 
@@ -105,15 +83,10 @@ class Mondrian(AbstractAlgorithm):
 
         self.update_partition(partition, qid_name, min_value, max_value)
 
-        if min_value == max_value:
-            return []
-        
-        try:
-            (left_gen_value, right_gen_value) = self.split_numerical_value(partition.attributes[qid_name].gen_value, median, next_unique_value)
-
+        try:            
             return [
-                self.create_new_partition_from(partition, qid_name, left_gen_value, min_value=min_value, max_value=median),
-                self.create_new_partition_from(partition, qid_name, right_gen_value, min_value=next_unique_value, max_value=max_value),
+                self.create_new_partition_from(partition, qid_name, min_value=min_value, max_value=median),
+                self.create_new_partition_from(partition, qid_name, min_value=next_unique_value, max_value=max_value),
             ]
         except:
             return []           
