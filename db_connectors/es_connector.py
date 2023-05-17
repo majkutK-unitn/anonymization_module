@@ -57,16 +57,16 @@ class EsConnector(MondrianAPI, DataflyAPI):
                 ]
             }
         '''
-        accumulator = {}
+        sensitive_attributes = {}
 
         for doc in original_docs:                
-            temp = {sensitive_attr_name: doc[sensitive_attr_name][0] for sensitive_attr_name in Config.sensitive_attr_names}
-            if str(temp) in accumulator:
-                accumulator[str(temp)]["count"] += 1
+            sens_attr = {sensitive_attr_name: doc[sensitive_attr_name][0] for sensitive_attr_name in Config.sensitive_attr_names}
+            if str(sens_attr) in sensitive_attributes:
+                sensitive_attributes[str(sens_attr)]["count"] += 1
             else:
-                accumulator[str(temp)] = temp | {"count": 1}
+                sensitive_attributes[str(sens_attr)] = sens_attr | {"count": 1}
         
-        yield anon_doc_with_qids | {"sensitive_attributes": list(accumulator.values())}
+        yield anon_doc_with_qids | {"sensitive_attributes": list(sensitive_attributes.values())}
 
     
     def map_docs_to_unique_sa_combinations_per_partition(self, original_docs: list, anon_doc_with_qids: dict[str, str]):
@@ -76,16 +76,16 @@ class EsConnector(MondrianAPI, DataflyAPI):
             { ...qids, "sa_1": "a", "sa_2": "d", "count": 4 }, 
             { ...qids, "sa_1": "c", "sa_2": "d", "count": 23 }
         '''
-        accumulator = {}
+        sensitive_attributes = {}
 
         for doc in original_docs:                
-            temp = {sensitive_attr_name: doc[sensitive_attr_name][0] for sensitive_attr_name in Config.sensitive_attr_names}
-            if str(temp) in accumulator:
-                accumulator[str(temp)]["count"] += 1
+            sens_attr = {sensitive_attr_name: doc[sensitive_attr_name][0] for sensitive_attr_name in Config.sensitive_attr_names}
+            if str(sens_attr) in sensitive_attributes:
+                sensitive_attributes[str(sens_attr)]["count"] += 1
             else:
-                accumulator[str(temp)] = temp | {"count": 1}
+                sensitive_attributes[str(sens_attr)] = sens_attr | {"count": 1}
 
-        for unique_sa_combination in list(accumulator.values()):
+        for unique_sa_combination in list(sensitive_attributes.values()):
              yield anon_doc_with_qids | unique_sa_combination                
 
     
@@ -99,13 +99,13 @@ class EsConnector(MondrianAPI, DataflyAPI):
             }
         '''
 
-        accumulator = {sensitive_attr_name: [] for sensitive_attr_name in Config.sensitive_attr_names}
+        sensitive_attributes = {sensitive_attr_name: [] for sensitive_attr_name in Config.sensitive_attr_names}
 
         for doc in original_docs:
             for sensitive_attr_name in Config.sensitive_attr_names:
-                accumulator[sensitive_attr_name].append(doc[sensitive_attr_name][0])
+                sensitive_attributes[sensitive_attr_name].append(doc[sensitive_attr_name][0])
 
-        yield anon_doc_with_qids | accumulator
+        yield anon_doc_with_qids | sensitive_attributes
 
 
     def generate_anonymized_docs(self, partitions: list[Partition]):
