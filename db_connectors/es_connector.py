@@ -203,37 +203,33 @@ class EsConnector(MondrianAPI, DataflyAPI):
 # ------------------------------
 
     def get_median(self, attr_name: str, attributes: dict[str, Attribute]) -> int:
-        median_query = self.map_attributes_to_query(attributes)
+        query = self.map_attributes_to_query(attributes)
 
-        median_aggs = {            
+        aggs = {            
             f"{attr_name}_median": { "percentiles": { "field": attr_name, "percents": [ 50 ] }},            
         }
 
-        median_res = self.es_client.search(index=self.INDEX_NAME, query=median_query, size=0, aggs=median_aggs)
+        res = self.es_client.search(index=self.INDEX_NAME, query=query, size=0, aggs=aggs)
 
-        median_value = list(median_res["aggregations"][f"{attr_name}_median"]['values'].values())[0]
+        value = list(res["aggregations"][f"{attr_name}_median"]['values'].values())[0]
 
-        if median_value is None:
-            raise Exception(f"Median request return 'None' for attribute '{attr_name}' and query {str(median_query)}")
-        
-        return int(median_value)
+        return int(value)
     
 
-    def get_unique_next_or_prev_value(self, direction: str, attributes: dict[str, Attribute], attr_name: str, value: int):
+    def get_unique_next_or_prev_value(self, direction: str, attributes: dict[str, Attribute], attr_name: str, central_value: int):
         assert direction in ["NEXT", "PREVIOUS"]
 
         (operator, func) = ("gt", "min") if direction == "NEXT" else ("lt", "max")
 
         query = self.map_attributes_to_query(attributes)
-        query["bool"]["must"].append({"range": { attr_name: { operator: value } } })
+        query["bool"]["must"].append({"range": { attr_name: { operator: central_value } } })
 
         aggs = {f"{attr_name}_{func}_in_partition": { func: { "field": attr_name } }}
 
-        unique_res = self.es_client.search(index=self.INDEX_NAME, query=query, aggs=aggs, size=0)
-        unique_res_val = unique_res["aggregations"][f"{attr_name}_{func}_in_partition"]['value']
+        res = self.es_client.search(index=self.INDEX_NAME, query=query, aggs=aggs, size=0)
+        value = res["aggregations"][f"{attr_name}_{func}_in_partition"]['value']
 
-        # TODO: throw exception instead
-        return int(unique_res_val) if unique_res_val is not None else None
+        return int(value)
 
 
     def get_value_to_split_at_and_next_unique_value(self, attr_name: str, attributes: dict[str, Attribute]) -> Tuple[int, int]:
