@@ -81,8 +81,8 @@ class Datafly(AbstractAlgorithm):
         old_to_new_ranges: dict[str, Attribute] = {}
 
         for i in range(int(len(attr_values) / 2)):
-            lower = attr_values[i].split(",")
-            higher = attr_values[i + 1].split(",")
+            lower = attr_values[2*i].split(",")
+            higher = attr_values[2*i + 1].split(",")
             
             min_val = int(lower[0])
             max_val = int(higher[1] if len(higher) > 1 else higher[0])
