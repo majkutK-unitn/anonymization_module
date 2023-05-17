@@ -4,7 +4,7 @@ import tqdm
 
 from typing import Tuple
 
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, RequestError
 from elasticsearch.helpers import streaming_bulk
 
 from models.attribute import Attribute
@@ -120,15 +120,32 @@ class EsConnector(MondrianAPI, DataflyAPI):
             yield from self.map_docs_to_individual_anonymized_docs(original_docs, anon_doc_with_qids)
 
 
+    def create_index(self):
+        """Creates an index in Elasticsearch if one isn't already there."""
+
+        try:
+            self.es_client.indices.create(
+                index=f"{self.INDEX_NAME}-anonymized",
+                mappings={"properties": 
+                          {num_attr_name: {"type": "integer_range"} for num_attr_name in Config.numerical_attr_config.keys()} |
+                          {cat_attr_name: {"type": "keyword"} for cat_attr_name in Config.categorical_attr_config.keys()}
+                        }
+            )
+        except RequestError as exception:
+            if exception.error != "resource_already_exists_exception":
+                raise exception
+
 
     def push_ecs(self, partitions: list[Partition]) -> bool:
+        self.create_index()
+
         progress = tqdm.tqdm(unit="docs", total=Config.size_of_dataset)
         successes = 0
-        for ok, action in streaming_bulk(
-            client=self.es_client, index="adults_anon", actions=self.generate_anonymized_docs(partitions),
-        ):
+
+        for ok, action in streaming_bulk(client=self.es_client, index="adults_anon", actions=self.generate_anonymized_docs(partitions),):
             progress.update(1)
             successes += ok
+
         print("Indexed %d/%d documents" % (successes, Config.size_of_dataset))
 
 
