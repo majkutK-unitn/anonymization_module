@@ -32,6 +32,8 @@ if __name__ == '__main__':
     config_file_path = "configs/adults_config.json"
     algorithm_name = "mondrian"
 
+    assert algorithm_name in ["datafly", "mondrian"]
+
     config = read_config(config_file_path)
     es_connector = EsConnector()
 
