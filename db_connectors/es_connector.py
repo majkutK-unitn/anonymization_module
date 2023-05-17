@@ -16,8 +16,7 @@ from models.config import Config
 from interfaces.datafly_api import DataflyAPI
 from interfaces.mondrian_api import MondrianAPI
 
-# TODO:
-#   (1) remove the int() casts so that the project can handle floats as well (with the adult dataset we only need ints)
+
 class EsConnector(MondrianAPI, DataflyAPI):
 
     def __init__(self):
@@ -26,6 +25,8 @@ class EsConnector(MondrianAPI, DataflyAPI):
         ROOT_CA_PATH = getenv('ROOT_CA_PATH')
         
         self.INDEX_NAME = getenv('INDEX_NAME')
+        self.ANON_INDEX_NAME = f"{self.INDEX_NAME}-anonymized"
+
         self.es_client = Elasticsearch(
                 hosts="https://neteye2.test:9200",
                 api_key=(API_KEY_ID, API_KEY_SECRET), 
@@ -108,16 +109,37 @@ class EsConnector(MondrianAPI, DataflyAPI):
         yield anon_doc_with_qids | sensitive_attributes
 
 
+    def map_num_attr_to_es_range(self, attribute: Attribute):
+        min_max = attribute.gen_value.split(",")
+
+        return {
+            "gte": min_max[0],
+            "lte": min_max[1] if len(min_max) > 1 else min_max[0]
+        }         
+    
+
+    def map_attributes_to_es_data_types(self, partition: Partition) -> dict[str, dict|str]:
+        doc_with_qids = {}
+
+        for attr_name, attribute in partition.attributes.items():
+            if attr_name in Config.numerical_attr_config.keys():
+                doc_with_qids[attr_name] = self.map_num_attr_to_es_range(attribute)
+            else:
+                doc_with_qids[attr_name] = attribute.gen_value
+
+        return doc_with_qids
+
+
     def generate_anonymized_docs(self, partitions: list[Partition]):
         for partition in partitions:
             query = self.map_attributes_to_query(partition.attributes)
-            res = self.es_client.search(index="adults", query=query, fields=Config.sensitive_attr_names, _source=False, size=partition.count)
-            original_docs = list(map(lambda hit: hit["fields"], res["hits"]["hits"]))            
+
+            res = self.es_client.search(index=self.INDEX_NAME, query=query, fields=Config.sensitive_attr_names, _source=False, size=partition.count)
+            original_docs = list(map(lambda hit: hit["fields"], res["hits"]["hits"]))
+
+            doc_with_qids = self.map_attributes_to_es_data_types(partition)
             
-            # TODO: map to ES data_types
-            anon_doc_with_qids = {attr_name: attr.gen_value for attr_name, attr in partition.attributes.items()}            
-            
-            yield from self.map_docs_to_individual_anonymized_docs(original_docs, anon_doc_with_qids)
+            yield from self.map_docs_to_individual_anonymized_docs(original_docs, doc_with_qids)
 
 
     def create_index(self):
@@ -125,7 +147,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
 
         try:
             self.es_client.indices.create(
-                index=f"{self.INDEX_NAME}-anonymized",
+                index=self.ANON_INDEX_NAME,
                 mappings={"properties": 
                           {num_attr_name: {"type": "integer_range"} for num_attr_name in Config.numerical_attr_config.keys()} |
                           {cat_attr_name: {"type": "keyword"} for cat_attr_name in Config.categorical_attr_config.keys()}
@@ -142,7 +164,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         progress = tqdm.tqdm(unit="docs", total=Config.size_of_dataset)
         successes = 0
 
-        for ok, action in streaming_bulk(client=self.es_client, index="adults_anon", actions=self.generate_anonymized_docs(partitions),):
+        for ok, action in streaming_bulk(client=self.es_client, index=self.ANON_INDEX_NAME, actions=self.generate_anonymized_docs(partitions),):
             progress.update(1)
             successes += ok
 
@@ -155,7 +177,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         if attributes is not None:
             query = {"query": self.map_attributes_to_query(attributes)}
 
-        res = self.es_client.count(index="adults", body=query)
+        res = self.es_client.count(index=self.INDEX_NAME, body=query)
 
         return int(res["count"])
     
