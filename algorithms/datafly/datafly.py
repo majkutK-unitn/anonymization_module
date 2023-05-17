@@ -37,31 +37,27 @@ class Datafly(AbstractAlgorithm):
 
 
     def generate_initial_partitions(self):
-        temp_partitions: list[dict[str, Attribute]] = [{}]
+        attributes_of_init_partitions: list[dict[str, Attribute]] = [{}]
 
         for attr_name, value in Config.numerical_attr_config.items():
             if value["datafly_num_of_buckets"] > 0:
                 num_ranges = self.db_connector.spread_attribute_into_uniform_buckets(attr_name, value["datafly_num_of_buckets"])
 
-                temp_partitions = self.generate_new_partition_combinations(temp_partitions, attr_name, num_ranges)
+                attributes_of_init_partitions = self.generate_new_partition_combinations(attributes_of_init_partitions, attr_name, num_ranges)
                 
 
         for attr_name, value in Config.categorical_attr_config.items():
             if value["datafly_init_level"] > 0:
                 nodes = Config.gen_hiers[attr_name].nodes_on_level(value["datafly_init_level"])
 
-                temp_partitions = self.generate_new_partition_combinations(temp_partitions, attr_name, nodes)
+                attributes_of_init_partitions = self.generate_new_partition_combinations(attributes_of_init_partitions, attr_name, nodes)        
 
-        self.get_partition_counts(temp_partitions)
-
-
-    def get_partition_counts(self, attributes_of_init_partitions: list[dict[str, Attribute]]):                
         for attributes in attributes_of_init_partitions:
             count = self.db_connector.get_document_count(attributes)
             if count != 0:
                 self.final_partitions.append(Partition(count, attributes))
 
-    
+
     def merge_generalized_partitions(self, partition: Partition, attr_name: str, new_attribute: Attribute, unique_values: dict[str, Partition]):
         partition.attributes[attr_name] = new_attribute
 
