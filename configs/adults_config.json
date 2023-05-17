@@ -1,7 +1,7 @@
 {
     "k": 10,    
-    "sensitive_attrs": ["class"],
-    "attributes": {
+    "sensitive_attributes": ["class"],
+    "qids": {
         "age": {
             "datafly_num_of_buckets": 20
         },

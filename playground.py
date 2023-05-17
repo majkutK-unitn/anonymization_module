@@ -25,7 +25,7 @@ def random_testing():
     config_file = open('configs/adults_config.json')
     config = json.load(config_file)
     
-    y = read_gen_hierarchies_from_json(config['attributes'])
+    y = read_gen_hierarchies_from_json(config['qids'])
         
     config_file.close()
 
@@ -52,7 +52,7 @@ def __test__map_attributes_to_query():
     config_file = open('configs/adults_config.json')
     config = json.load(config_file)
     
-    y = read_gen_hierarchies_from_json(config['attributes'])
+    y = read_gen_hierarchies_from_json(config['qids'])
         
     config_file.close()
 

@@ -18,7 +18,7 @@ class Config(object):
         
     k: int
     qid_names: list[str]
-    sensitive_attrs: list[str]
+    sensitive_attr_names: list[str]
     
     categorical_attr_config: dict[str, dict | int | str]
     numerical_attr_config: dict[str, dict | int | str]
