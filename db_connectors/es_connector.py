@@ -218,6 +218,8 @@ class EsConnector(MondrianAPI, DataflyAPI):
         res = self.es_client.search(index=self.INDEX_NAME, size=0, aggs=aggs)
 
         bucket_upper_bounds = list(set(map(lambda x: int(x), res["aggregations"][f"{attr_name}_percentiles"]["values"].values())))
+        bucket_upper_bounds.sort()
+        
         min, max = self.get_attribute_min_max(attr_name)
 
         num_ranges: list[NumRange] = []
