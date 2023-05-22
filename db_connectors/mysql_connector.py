@@ -57,8 +57,7 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
 
 
     def get_document_count(self, attributes: dict[str, Attribute] = None) -> int:                
-        if attributes is not None:
-            pass
+        where = self.map_attributes_to_where_conditions(attributes)
 
         cursor = self.mysql_client.cursor()
         cursor.execute("SELECT COUNT(*) FROM adults")
