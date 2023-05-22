@@ -20,16 +20,16 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
         MYSQL_HOST = getenv('MYSQL_HOST')
         MYSQL_USER = getenv('MYSQL_USER')
         MYSQL_PASSWORD = getenv('MYSQL_PASSWORD')
-        MYSQL_DATABASE = getenv('MYSQL_DATABASE')
+        MYSQL_DATABASE = getenv('MYSQL_DATABASE')        
         
-        self.INDEX_NAME = getenv('INDEX_NAME')
-        self.ANON_INDEX_NAME = f"{self.INDEX_NAME}-anonymized"
+        self.TABLE_NAME = getenv('MYSQL_TABLE_NAME')
+        self.ANON_TABLE_NAME = f"{self.TABLE_NAME}-anonymized"
 
         self.mysql_client = mysql.connector.connect(
-            host="neteye2.test",
-            user="anon_module",
-            password="amRvaWVhaGRlYWlkaGVpdWFlZAo",
-            database="anonymization"
+            host=MYSQL_HOST,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            database=MYSQL_DATABASE
         )
     
     def map_attributes_to_where_conditions(self, attributes: dict[str, Attribute]) -> str:
@@ -60,7 +60,7 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
         where = self.map_attributes_to_where_conditions(attributes)
 
         cursor = self.mysql_client.cursor()
-        query = f"SELECT COUNT(*) FROM adults {where}"
+        query = f"SELECT COUNT(*) FROM {self.TABLE_NAME} {where}"
         
         cursor.execute(query)
         count = cursor.fetchone()
@@ -72,10 +72,10 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
         where = self.map_attributes_to_where_conditions(attributes)
 
         cursor = self.mysql_client.cursor()
-        cursor.execute(f"SELECT MIN({attr_name}) FROM adults {where}")
+        cursor.execute(f"SELECT MIN({attr_name}) FROM {self.TABLE_NAME} {where}")
         min_value = cursor.fetchone()
-        cursor.execute(f"SELECT MAX({attr_name}) FROM adults {where}")
-        max_value = cursor.fetchone()        
+        cursor.execute(f"SELECT MAX({attr_name}) FROM {self.TABLE_NAME} {where}")
+        max_value = cursor.fetchone()
 
         return int(min_value[0]), int(max_value[0])
     
