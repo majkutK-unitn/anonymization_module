@@ -9,7 +9,7 @@ class AbstractAlgorithm(ABC):
         pass
 
     @abstractmethod
-    def run(self, config: dict[str, int|dict]) -> bool:
+    def run(self, config: dict[str, int|dict]):
         pass
 
     @abstractmethod

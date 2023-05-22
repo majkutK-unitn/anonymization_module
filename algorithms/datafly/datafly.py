@@ -144,7 +144,7 @@ class Datafly(AbstractAlgorithm):
         parse_config(config, self.db_connector)     
 
     
-    def run(self, config: dict[str, int|dict]) -> bool:
+    def run(self, config: dict[str, int|dict]):
         self.initialize(config)
         self.generate_initial_partitions()
         
