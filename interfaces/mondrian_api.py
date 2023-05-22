@@ -2,7 +2,6 @@ from abc import abstractmethod
 
 from typing import Tuple
 
-from models.attribute import Attribute
 from models.partition import Partition
 
 from interfaces.abstract_api import AbstractAPI
@@ -13,5 +12,5 @@ class MondrianAPI(AbstractAPI):
         pass
 
     @abstractmethod
-    def get_value_to_split_at_and_next_unique_value(self,  attr_name: str, attributes: dict[str, Attribute]) -> Tuple[int, int]:
+    def get_value_to_split_at_and_next_unique_value(self,  attr_name: str, partition: Partition) -> Tuple[int, int]:
         pass

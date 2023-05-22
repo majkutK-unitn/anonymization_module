@@ -80,9 +80,9 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
         return int(min_value[0]), int(max_value[0])
     
 
-    def get_median(self, attr_name: str, attributes: dict[str, Attribute], count: int) -> int:
+    def get_median(self, attr_name: str, attributes: dict[str, Attribute], partition_size: int) -> int:
         where = self.map_attributes_to_where_conditions(attributes)
-        middle_index = int(count*0.5)
+        middle_index = int(partition_size*0.5)
 
         query = f"SELECT {attr_name} FROM {self.TABLE_NAME} {where} ORDER BY {attr_name} DESC LIMIT {middle_index},1"
 
@@ -92,7 +92,7 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
 
         return int(median[0])
     
-    def get_unique_next_or_prev_value(self, direction: str, attributes: dict[str, Attribute], attr_name: str, central_value: int):
+    def get_unique_next_or_prev_value(self, direction: str, attr_name, attributes: dict[str, Attribute], central_value: int):
         assert direction in ["NEXT", "PREVIOUS"]
 
         (operator, func) = (">", "MIN") if direction == "NEXT" else ("<", "MAX")
@@ -109,19 +109,19 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
     
     
 
-    def get_value_to_split_at_and_next_unique_value(self,  attr_name: str, attributes: dict[str, Attribute], partition_count: int) -> Tuple[int, int]:
-        median = self.get_median(attr_name, attributes, partition_count)
-        (_, max_value) = self.get_attribute_min_max(attr_name, attributes)
+    def get_value_to_split_at_and_next_unique_value(self,  attr_name: str, partition: Partition) -> Tuple[int, int]:        
+        median = self.get_median(attr_name, partition.attributes, partition.count)
+        (_, max_value) = self.get_attribute_min_max(attr_name, partition.attributes)
 
         value_to_split_at: int
         next_unique_value: int
 
         if median == max_value:
-            value_to_split_at = self.get_unique_next_or_prev_value("PREVIOUS", attributes, attr_name, max_value)
+            value_to_split_at = self.get_unique_next_or_prev_value("PREVIOUS", attr_name, partition.attributes, max_value)
             next_unique_value = median
         else:
             value_to_split_at = median
-            next_unique_value = self.get_unique_next_or_prev_value("NEXT", attributes, attr_name, median)
+            next_unique_value = self.get_unique_next_or_prev_value("NEXT", attr_name, partition.attributes, median)
 
         return value_to_split_at, next_unique_value
     
