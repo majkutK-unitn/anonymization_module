@@ -308,15 +308,10 @@ class EsConnector(MondrianAPI, DataflyAPI):
         for attr_name in attributes.keys():
             node_or_range = Config.attr_metadata[attr_name]
 
-            if isinstance(node_or_range, GenTree):
-                leaf_values = []
-                current_node = node_or_range.node(attributes[attr_name].gen_value)
-                for covered_node in current_node.covered_nodes.values():
-                    # Only filter for leaf values, as the intermediate ones are not in present in the dataset, they should not be part of the queries
-                    if not covered_node.children:
-                        leaf_values.append(covered_node.value)
+            if isinstance(node_or_range, GenTree):                
+                current_node = node_or_range.node(attributes[attr_name].gen_value)                
 
-                must.append({"terms": {f"{attr_name}.keyword": leaf_values}})
+                must.append({"terms": {f"{attr_name}.keyword": current_node.get_leaf_node_values()}})
             else:
                 range_min_and_max = attributes[attr_name].gen_value.split(',')
                 # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
