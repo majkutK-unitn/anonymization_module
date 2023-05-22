@@ -144,7 +144,7 @@ class Datafly(AbstractAlgorithm):
         parse_config(config, self.db_connector)     
 
     
-    def run(self, config: dict[str, int|dict]) -> bool:
+    def run(self, config: dict[str, int|dict]):
         self.initialize(config)
         self.generate_initial_partitions()
         
@@ -160,29 +160,4 @@ class Datafly(AbstractAlgorithm):
         for partition in self.final_partitions:
             partition.attributes.update(not_generalized_attributes)        
 
-        return self.db_connector.push_ecs(self.final_partitions)
-    
-
-    def get_normalized_width(self, partition: Partition, qid_name: str) -> float:    
-        """ Return Normalized width of partition """        
-
-        return partition.attributes[qid_name].width * 1.0 / len(Config.attr_metadata[qid_name])
-    
-    
-    def calculate_ncp(self) -> float:
-        ncp = 0.0
-
-        for partition in self.final_partitions:
-            r_ncp = 0.0
-            for attr_name in Config.qid_names:
-                r_ncp += self.get_normalized_width(partition, attr_name)
-
-            r_ncp *= partition.count
-            ncp += r_ncp
-
-        # covert to NCP percentage
-        ncp /= len(Config.qid_names)
-        ncp /= Config.size_of_dataset
-        ncp *= 100
-
-        return ncp
+        self.db_connector.push_partitions(self.final_partitions)        

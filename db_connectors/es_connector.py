@@ -108,13 +108,19 @@ class EsConnector(MondrianAPI, DataflyAPI):
         yield anon_doc_with_qids | sensitive_attributes
 
 
-    def map_num_attr_to_es_range(self, attribute: Attribute):
+    def map_numerical_attr_to_es_range(self, attribute: Attribute):
         min_max = attribute.gen_value.split(",")
 
         return {
             "gte": min_max[0],
             "lte": min_max[1] if len(min_max) > 1 else min_max[0]
-        }         
+        }
+    
+
+    def map_categorical_attr_to_leaf_values(self, attr_name: str, gen_value: str):
+        current_node = Config.attr_metadata[attr_name].node(gen_value)
+
+        return current_node.get_leaf_node_values()
     
 
     def map_attributes_to_es_data_types(self, partition: Partition) -> dict[str, dict|str]:
@@ -122,9 +128,9 @@ class EsConnector(MondrianAPI, DataflyAPI):
 
         for attr_name, attribute in partition.attributes.items():
             if attr_name in Config.numerical_attr_config.keys():
-                doc_with_qids[attr_name] = self.map_num_attr_to_es_range(attribute)
+                doc_with_qids[attr_name] = self.map_numerical_attr_to_es_range(attribute)
             else:
-                doc_with_qids[attr_name] = attribute.gen_value
+                doc_with_qids[attr_name] = self.map_categorical_attr_to_leaf_values(attr_name, attribute.gen_value)
 
         return doc_with_qids
 
@@ -157,7 +163,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
                 raise exception
 
 
-    def push_ecs(self, partitions: list[Partition]) -> bool:
+    def push_partitions(self, partitions: list[Partition]):
         self.create_index()
 
         progress = tqdm.tqdm(unit="docs", total=Config.size_of_dataset)
@@ -302,15 +308,10 @@ class EsConnector(MondrianAPI, DataflyAPI):
         for attr_name in attributes.keys():
             node_or_range = Config.attr_metadata[attr_name]
 
-            if isinstance(node_or_range, GenTree):
-                leaf_values = []
-                current_node = node_or_range.node(attributes[attr_name].gen_value)
-                for covered_node in current_node.covered_nodes.values():
-                    # Only filter for leaf values, as the intermediate ones are not in present in the dataset, they should not be part of the queries
-                    if not covered_node.children:
-                        leaf_values.append(covered_node.value)
+            if isinstance(node_or_range, GenTree):                
+                current_node = node_or_range.node(attributes[attr_name].gen_value)                
 
-                must.append({"terms": {f"{attr_name}.keyword": leaf_values}})
+                must.append({"terms": {f"{attr_name}.keyword": current_node.get_leaf_node_values()}})
             else:
                 range_min_and_max = attributes[attr_name].gen_value.split(',')
                 # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number

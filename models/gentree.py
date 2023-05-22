@@ -66,5 +66,9 @@ class GenTree(object):
         return nodes
     
 
+    def get_leaf_node_values(self):
+        return [node.value for node in filter(lambda node: not node.children, self.covered_nodes.values())]        
+    
+
     def __len__(self):
         return self.num_of_leaves
