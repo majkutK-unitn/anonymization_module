@@ -157,7 +157,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
                 raise exception
 
 
-    def push_ecs(self, partitions: list[Partition]) -> bool:
+    def push_partitions(self, partitions: list[Partition]):
         self.create_index()
 
         progress = tqdm.tqdm(unit="docs", total=Config.size_of_dataset)

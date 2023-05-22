@@ -160,7 +160,7 @@ class Datafly(AbstractAlgorithm):
         for partition in self.final_partitions:
             partition.attributes.update(not_generalized_attributes)        
 
-        return self.db_connector.push_ecs(self.final_partitions)
+        self.db_connector.push_partitions(self.final_partitions)
     
 
     def get_normalized_width(self, partition: Partition, qid_name: str) -> float:    

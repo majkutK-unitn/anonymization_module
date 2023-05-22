@@ -202,7 +202,7 @@ class Mondrian(AbstractAlgorithm):
         if sum(map(lambda partition: partition.count, self.final_partitions)) != whole_partition.count:        
             raise Exception("Losing records during anonymization")
 
-        return self.db_connector.push_ecs(self.final_partitions)
+        return self.db_connector.push_partitions(self.final_partitions)
     
 
     def calculate_ncp(self):

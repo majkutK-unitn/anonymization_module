@@ -3,11 +3,12 @@ from abc import ABC, abstractmethod
 from typing import Tuple
 
 from models.attribute import Attribute
+from models.partition import Partition
 
 
 class AbstractAPI(ABC):
     @abstractmethod
-    def push_ecs(self, ecs: list) -> bool:
+    def push_partitions(self, partitions: list[Partition]):
         pass
 
     @abstractmethod
