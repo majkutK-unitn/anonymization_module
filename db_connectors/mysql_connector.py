@@ -60,7 +60,9 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
         where = self.map_attributes_to_where_conditions(attributes)
 
         cursor = self.mysql_client.cursor()
-        cursor.execute("SELECT COUNT(*) FROM adults")
+        query = f"SELECT COUNT(*) FROM adults {where}"
+        
+        cursor.execute(query)
         count = cursor.fetchone()
 
         return count[0]
