@@ -1,4 +1,5 @@
 import json
+
 from algorithms.datafly.datafly import Datafly
 
 from db_connectors.es_connector import EsConnector
@@ -7,6 +8,8 @@ from models.attribute import Attribute
 from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
+from models.config import Config
+from utils.config_processor import parse_config
 
 from utils.gen_hierarchy_parser import read_gen_hierarchies_from_json, read_gen_hierarchies_from_text
 
@@ -92,6 +95,14 @@ def __test__datafly_init():
     config_file.close()
     datafly = Datafly(ES_CONNECTOR)
     datafly.run(config)
-    
 
-__test__datafly_init()
+
+def __test__get_node_leaf_values():
+    config_file = open('configs/adults_config.json')
+    config = json.load(config_file)
+    config_file.close()
+    parse_config(config, ES_CONNECTOR)
+    node = Config.attr_metadata["marital_status"].node("leave")
+    print(node.get_leaf_node_values())
+
+__test__get_node_leaf_values()
