@@ -68,8 +68,17 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
         return count[0]
     
     
-    def get_attribute_min_max(self, attr_name: str, attributes: dict[str, Attribute]) -> Tuple[int,int]:
-        pass
+    def get_attribute_min_max(self, attr_name: str, attributes: dict[str, Attribute] = None) -> Tuple[int,int]:
+        where = self.map_attributes_to_where_conditions(attributes)
+
+        cursor = self.mysql_client.cursor()
+        cursor.execute(f"SELECT MIN({attr_name}) FROM adults {where}")
+        min_value = cursor.fetchone()
+        cursor.execute(f"SELECT MAX({attr_name}) FROM adults {where}")
+        max_value = cursor.fetchone()        
+
+        return int(min_value[0]), int(max_value[0])
+    
 
     def spread_attribute_into_uniform_buckets(self, attr_name: str, num_of_buckets: int) -> list[NumRange]:
         pass
