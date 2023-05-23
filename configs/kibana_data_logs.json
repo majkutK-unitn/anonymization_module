@@ -1,0 +1,1135 @@
+{
+    "k": 10,    
+    "sensitive_attributes": ["host", "request"],
+    "qids": {
+        "bytes": {
+            "datafly_num_of_buckets": 20
+        },
+        "geo.dest": {
+            "datafly_init_level": 2,
+            "tree": {
+                "value": "*",
+                "children": [
+                    {
+                        "value": "Africa",
+                        "children": [
+                            {
+                                "value": "Central Africa",
+                                "children": [
+                                    {
+                                        "value": "BI",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CF",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CG",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "RW",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TD",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "ZR",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Eastern Africa",
+                                "children": [
+                                    {
+                                        "value": "DJ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "ER",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "ET",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "KE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TZ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "UG",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Indian Ocean",
+                                "children": [
+                                    {
+                                        "value": "KM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MG",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MU",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "RE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SC",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "YT",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Northern Africa",
+                                "children": [
+                                    {
+                                        "value": "DZ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "EG",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "EH",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LY",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MA",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SD",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TN",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Southern Africa",
+                                "children": [
+                                    {
+                                        "value": "AO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BW",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LS",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MW",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MZ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NA",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SZ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "ZA",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "ZM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "ZW",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Western Africa",
+                                "children": [
+                                    {
+                                        "value": "BF",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BJ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CI",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CV",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GA",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GH",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GN",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GQ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GW",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "ML",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NG",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SL",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SN",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "ST",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TG",
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "value": "Americas",
+                        "children": [
+                            {
+                                "value": "Central America",
+                                "children": [
+                                    {
+                                        "value": "BZ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GT",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "HN",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MX",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NI",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PA",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SV",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "North America",
+                                "children": [
+                                    {
+                                        "value": "CA",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GL",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "US",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "South America",
+                                "children": [
+                                    {
+                                        "value": "AR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CL",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "EC",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "FK",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GF",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GY",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PY",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "UE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "UY",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "West Indies",
+                                "children": [
+                                    {
+                                        "value": "AG",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "AI",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "AN",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "AW",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BB",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BS",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CU",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "DM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "DO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GD",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GP",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "HT",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "JM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "KN",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "KY",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LC",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MQ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MS",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TC",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TT",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "VC",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "VG",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "VI",
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "value": "Antarctica",
+                        "children": [
+                            {
+                                "value": "Antarctica",
+                                "children": [
+                                    {
+                                        "value": "AQ",
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "value": "Asia",
+                        "children": [
+                            {
+                                "value": "Central Asia",
+                                "children": [
+                                    {
+                                        "value": "KG",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "KZ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TJ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "UZ",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "East Asia",
+                                "children": [
+                                    {
+                                        "value": "CN",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "HK",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "JP",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "KP",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "KR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TW",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Northern Asia",
+                                "children": [
+                                    {
+                                        "value": "MN",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "RU",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "South Asia",
+                                "children": [
+                                    {
+                                        "value": "AF",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BD",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BT",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "IN",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "IO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LK",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MV",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NP",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PK",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "South East Asia",
+                                "children": [
+                                    {
+                                        "value": "BN",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CC",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CX",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "ID",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "KH",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LA",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MY",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PH",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SG",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TH",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TP",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "VN",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "South West Asia",
+                                "children": [
+                                    {
+                                        "value": "AE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "AM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "AZ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BH",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CY",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "IL",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "IQ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "IR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "JO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "KW",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LB",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "OM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "QA",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SA",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SY",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "YE",
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "value": "Atlantic Ocean",
+                        "children": [
+                            {
+                                "value": "South Atlantic Ocean",
+                                "children": [
+                                    {
+                                        "value": "BV",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GS",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SH",
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "value": "Europe",
+                        "children": [
+                            {
+                                "value": "Central Europe",
+                                "children": [
+                                    {
+                                        "value": "AT",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CH",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CZ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "HU",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LI",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SK",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Eastern Europe",
+                                "children": [
+                                    {
+                                        "value": "BY",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "EE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LT",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LV",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MD",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PL",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "UA",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Northern Europe",
+                                "children": [
+                                    {
+                                        "value": "DK",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "FI",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "FO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "IS",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SJ",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "South East Europe",
+                                "children": [
+                                    {
+                                        "value": "AL",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BA",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "BG",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "HR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MK",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "RO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SI",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "YU",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "South West Europe",
+                                "children": [
+                                    {
+                                        "value": "AD",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "ES",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GI",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PT",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Southern Europe",
+                                "children": [
+                                    {
+                                        "value": "IT",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MT",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "VA",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Western Europe",
+                                "children": [
+                                    {
+                                        "value": "BE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "DE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "FR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "FX",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "IE",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "LU",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MC",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NL",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "UK/GB",
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "value": "Oceania",
+                        "children": [
+                            {
+                                "value": "North Pacific Ocean",
+                                "children": [
+                                    {
+                                        "value": "UM",
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "value": "Pacific",
+                                "children": [
+                                    {
+                                        "value": "AS",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "AU",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "CK",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "FJ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "FM",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "GU",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "KI",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MH",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "MP",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NC",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NF",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NR",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NU",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "NZ",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PF",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PG",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PN",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "PW",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "SB",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TK",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TO",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "TV",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "VU",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "WF",
+                                        "children": []
+                                    },
+                                    {
+                                        "value": "WS",
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }            
+        }
+    }
+}
