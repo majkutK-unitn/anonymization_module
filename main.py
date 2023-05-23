@@ -21,9 +21,9 @@ def read_config(file_name: str) -> dict[str, int|dict]:
 
 def wire_up(algorithm: str, db_type: str) -> AbstractAlgorithm:
     assert algorithm_name in ["datafly", "mondrian"]
-    assert db_type in ["es", "mysql"]
+    assert db_type in ["Elasticsearch", "MySQL"]
 
-    db_connector: AbstractAPI = EsConnector() if db_type == "es" else MySQLConnector()
+    db_connector: AbstractAPI = EsConnector() if db_type == "Elasticsearch" else MySQLConnector()
 
     if algorithm == "datafly":
         return Datafly(db_connector)        
@@ -37,17 +37,17 @@ def wire_up(algorithm: str, db_type: str) -> AbstractAlgorithm:
 if __name__ == '__main__':
     config_file_path = "configs/adults_config.json"
     
-    # db_type = "es"
-    db_type = "mysql"
-    # algorithm_name = "datafly"
-    algorithm_name = "mondrian"
+    # db_type = "Elasticsearch"
+    db_type = "MySQL"
+    algorithm_name = "datafly"
+    # algorithm_name = "mondrian"
     algorithm = wire_up(algorithm_name, db_type)
 
     config = read_config(config_file_path)
 
     start_time = time.time()
 
-    print(f"Running {algorithm_name} with k={config['k']}...")
+    print(f"Running {algorithm_name} on {db_type} backend with k={config['k']}...")
 
     algorithm.run(config)
     
