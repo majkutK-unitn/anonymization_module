@@ -8,6 +8,7 @@ from interfaces.abstract_algorithm import AbstractAlgorithm
 from interfaces.abstract_api import AbstractAPI
 
 from db_connectors.es_connector import EsConnector
+from db_connectors.mysql_connector import MySQLConnector
 
 
 def read_config(file_name: str) -> dict[str, int|dict]:
@@ -18,7 +19,12 @@ def read_config(file_name: str) -> dict[str, int|dict]:
     return config
         
 
-def wire_up(algorithm: str, db_connector: AbstractAPI) -> AbstractAlgorithm:
+def wire_up(algorithm: str, db_type: str) -> AbstractAlgorithm:
+    assert algorithm_name in ["datafly", "mondrian"]
+    assert db_type in ["es", "mysql"]
+
+    db_connector: AbstractAPI = EsConnector() if db_type == "es" else MySQLConnector()
+
     if algorithm == "datafly":
         return Datafly(db_connector)        
 
@@ -26,18 +32,18 @@ def wire_up(algorithm: str, db_connector: AbstractAPI) -> AbstractAlgorithm:
         return Mondrian(db_connector)
     
     raise Exception(f"No algorithm implementation name '{algorithm}' exists!")
-    
+
 
 if __name__ == '__main__':
     config_file_path = "configs/adults_config.json"
+    
+    # db_type = "es"
+    db_type = "mysql"
+    # algorithm_name = "datafly"
     algorithm_name = "mondrian"
-
-    assert algorithm_name in ["datafly", "mondrian"]
+    algorithm = wire_up(algorithm_name, db_type)
 
     config = read_config(config_file_path)
-    es_connector = EsConnector()
-
-    algorithm = wire_up(algorithm_name, es_connector)
 
     start_time = time.time()
 
