@@ -169,7 +169,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         progress = tqdm.tqdm(unit="docs", total=Config.size_of_dataset)
         successes = 0
 
-        for ok, action in streaming_bulk(client=self.es_client, index=self.ANON_INDEX_NAME, actions=self.generate_anonymized_docs(partitions),):
+        for ok, action in streaming_bulk(client=self.es_client, index=self.ANON_INDEX_NAME, actions=self.generate_anonymized_docs(partitions)):
             progress.update(1)
             successes += ok
 
