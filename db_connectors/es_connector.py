@@ -221,7 +221,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         return int(value)
     
 
-    def get_unique_next_or_prev_value(self, direction: str, attributes: dict[str, Attribute], attr_name: str, central_value: int):
+    def get_unique_next_or_prev_value(self, direction: str, attr_name: str, attributes: dict[str, Attribute], central_value: int):
         assert direction in ["NEXT", "PREVIOUS"]
 
         (operator, func) = ("gt", "min") if direction == "NEXT" else ("lt", "max")
@@ -237,21 +237,21 @@ class EsConnector(MondrianAPI, DataflyAPI):
         return int(value)
 
 
-    def get_value_to_split_at_and_next_unique_value(self, attr_name: str, attributes: dict[str, Attribute]) -> Tuple[int, int]:
+    def get_value_to_split_at_and_next_unique_value(self, attr_name: str, partition: Partition) -> Tuple[int, int]:
         """ Find the middle of the partition and the next unique value that follows the median """
 
-        median = self.get_median(attr_name, attributes)
-        (_, max_value) = self.get_attribute_min_max(attr_name, attributes)
+        median = self.get_median(attr_name, partition.attributes)
+        (_, max_value) = self.get_attribute_min_max(attr_name, partition.attributes)
 
         value_to_split_at: int
         next_unique_value: int
 
         if median == max_value:
-            value_to_split_at = self.get_unique_next_or_prev_value("PREVIOUS", attributes, attr_name, max_value)
+            value_to_split_at = self.get_unique_next_or_prev_value("PREVIOUS", attr_name, partition.attributes, max_value)
             next_unique_value = median
         else:
             value_to_split_at = median
-            next_unique_value = self.get_unique_next_or_prev_value("NEXT", attributes, attr_name, median)
+            next_unique_value = self.get_unique_next_or_prev_value("NEXT", attr_name, partition.attributes, median)
 
         return value_to_split_at, next_unique_value    
     

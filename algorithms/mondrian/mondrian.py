@@ -71,7 +71,7 @@ class Mondrian(AbstractAlgorithm):
     def split_numerical_attribute(self, partition: Partition, qid_name: str) -> list[Partition]:
         """ Split numeric attribute by along the median, creating two new sub-partitions """
         
-        (median, next_unique_value) = self.db_connector.get_value_to_split_at_and_next_unique_value(qid_name, partition.attributes)
+        (median, next_unique_value) = self.db_connector.get_value_to_split_at_and_next_unique_value(qid_name, partition)
         (min_value, max_value) = self.db_connector.get_attribute_min_max(qid_name, partition.attributes)
 
         self.update_partition(partition, qid_name, min_value, max_value)
