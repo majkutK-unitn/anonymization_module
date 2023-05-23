@@ -3,6 +3,7 @@ from os import getenv
 from typing import Tuple
 
 import mysql.connector
+import tqdm
 
 from interfaces.datafly_api import DataflyAPI
 from interfaces.mondrian_api import MondrianAPI
@@ -23,7 +24,7 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
         MYSQL_DATABASE = getenv('MYSQL_DATABASE')        
         
         self.TABLE_NAME = getenv('MYSQL_TABLE_NAME')
-        self.ANON_TABLE_NAME = f"{self.TABLE_NAME}-anonymized"
+        self.ANON_TABLE_NAME = f"{self.TABLE_NAME}_anonymized"
 
         self.mysql_client = mysql.connector.connect(
             host=MYSQL_HOST,
@@ -128,8 +129,62 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
 
     def spread_attribute_into_uniform_buckets(self, attr_name: str, num_of_buckets: int) -> list[NumRange]:
         pass
+    
+        
+    def map_numerical_attr_to_es_range(self, attr_name: str, attribute: Attribute):
+        min_max = attribute.gen_value.split(",")
 
+        return {
+            f"{attr_name}_from": min_max[0],
+            f"{attr_name}_to": min_max[1] if len(min_max) > 1 else min_max[0]
+        }
     
 
+    def map_partition_to_mysql_anon_record(self, partition: Partition) -> dict[str, dict|str]:
+        doc_with_qids = {}
+
+        for attr_name, attribute in partition.attributes.items():
+            if attr_name in Config.numerical_attr_config.keys():
+                doc_with_qids = doc_with_qids | self.map_numerical_attr_to_es_range(attr_name, attribute)
+            else:
+                doc_with_qids[attr_name] = attribute.gen_value
+
+        return doc_with_qids
+    
+
+    def generate_anonymized_docs(self, partitions: list[Partition]):        
+        for partition in partitions:
+            where = self.map_attributes_to_where_conditions(partition.attributes)
+
+            query = f"SELECT {','.join(Config.sensitive_attr_names)} FROM {self.TABLE_NAME} {where}"
+            cursor = self.mysql_client.cursor()
+            cursor.execute(query)
+            sensitive_values_in_partition = cursor.fetchall()
+
+            record_with_qids = self.map_partition_to_mysql_anon_record(partition)
+
+            for sens_values_per_record in sensitive_values_in_partition:
+                anon_record = record_with_qids | {sensitive_attr_name: sens_values_per_record[i] for i, sensitive_attr_name in enumerate(Config.sensitive_attr_names)}
+                                
+                attr_names = ",".join(anon_record.keys())
+                attr_value_placeholders =  ",".join(["%s"] * len(anon_record.values()))
+
+                yield (attr_names, attr_value_placeholders, list(anon_record.values()))
+
+
     def push_partitions(self, partitions: list[Partition]):
-        pass
+        cursor = self.mysql_client.cursor()
+
+        progress = tqdm.tqdm(unit="docs", total=Config.size_of_dataset)
+        successes = 0
+
+        for (attr_names, attr_value_placeholders, anon_values) in self.generate_anonymized_docs(partitions):
+            query = f"INSERT INTO {self.ANON_TABLE_NAME} ({attr_names}) VALUES ({attr_value_placeholders})"
+            cursor.execute(query, anon_values)
+
+            progress.update(1)
+            successes += 1
+
+        self.mysql_client.commit()        
+
+        print(f"Inserted {successes}/%{Config.size_of_dataset} records.")
