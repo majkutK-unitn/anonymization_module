@@ -163,13 +163,17 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
 
             record_with_qids = self.map_partition_to_mysql_anon_record(partition)
 
+            anon_records_in_partition = []
+
             for sens_values_per_record in sensitive_values_in_partition:
                 anon_record = record_with_qids | {sensitive_attr_name: sens_values_per_record[i] for i, sensitive_attr_name in enumerate(Config.sensitive_attr_names)}
                                 
                 attr_names = ",".join(anon_record.keys())
                 attr_value_placeholders =  ",".join(["%s"] * len(anon_record.values()))
 
-                yield (attr_names, attr_value_placeholders, list(anon_record.values()))
+                anon_records_in_partition.append(tuple(anon_record.values()))
+
+            yield attr_names, attr_value_placeholders, anon_records_in_partition
 
 
     def push_partitions(self, partitions: list[Partition]):
@@ -178,13 +182,13 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
         progress = tqdm.tqdm(unit="docs", total=Config.size_of_dataset)
         successes = 0
 
-        for (attr_names, attr_value_placeholders, anon_values) in self.generate_anonymized_docs(partitions):
+        for (attr_names, attr_value_placeholders, anon_records) in self.generate_anonymized_docs(partitions):
             query = f"INSERT INTO {self.ANON_TABLE_NAME} ({attr_names}) VALUES ({attr_value_placeholders})"
-            cursor.execute(query, anon_values)
+            cursor.executemany(query, anon_records)
 
-            progress.update(1)
-            successes += 1
+            progress.update(cursor.rowcount)
+            successes += cursor.rowcount
 
         self.mysql_client.commit()        
 
-        print(f"Inserted {successes}/%{Config.size_of_dataset} records.")
+        print(f"Inserted {successes}/{Config.size_of_dataset} records.")
