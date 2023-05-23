@@ -1,4 +1,4 @@
-from typing import Tuple
+import warnings
 
 from interfaces.abstract_algorithm import AbstractAlgorithm
 from interfaces.mondrian_api import MondrianAPI
@@ -167,8 +167,12 @@ class Mondrian(AbstractAlgorithm):
         for attr_name in Config.qid_names:
             root_node_or_num_range = Config.attr_metadata[attr_name]    
             attributes[attr_name] = Attribute(len(root_node_or_num_range), root_node_or_num_range.value)
-            
-        whole_partition = Partition(Config.size_of_dataset, attributes)        
+
+        whole_partition_size = self.db_connector.get_document_count(attributes)
+        if whole_partition_size != Config.size_of_dataset:
+            warnings.warn(f"\n\n\n{'='*35}\tWARNING!\t{'='*35}\n\t>> The initial partition does not cover the entire dataset!\n{'='*91}\n\n")
+
+        whole_partition = Partition(whole_partition_size, attributes)
         
         return whole_partition
     
