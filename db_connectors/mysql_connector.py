@@ -68,17 +68,29 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
 
         return count[0]
     
-    
-    def get_attribute_min_max(self, attr_name: str, attributes: dict[str, Attribute] = None) -> Tuple[int,int]:
+
+    def get_aggregate(self, aggr_func: str, attr_name: str, attributes: dict[str, Attribute]) -> Tuple[int,int]:
+        assert aggr_func in ["MIN", "MAX", "AVG", "SUM"]
+
         where = self.map_attributes_to_where_conditions(attributes)
 
         cursor = self.mysql_client.cursor()
-        cursor.execute(f"SELECT MIN({attr_name}) FROM {self.TABLE_NAME} {where}")
-        min_value = cursor.fetchone()
-        cursor.execute(f"SELECT MAX({attr_name}) FROM {self.TABLE_NAME} {where}")
-        max_value = cursor.fetchone()
+        cursor.execute(f"SELECT {aggr_func}({attr_name}) FROM {self.TABLE_NAME} {where}")
+        aggr_value = cursor.fetchone()
 
-        return int(min_value[0]), int(max_value[0])
+        return int(aggr_value[0])
+    
+
+    def get_attribute_min(self, attr_name: str, attributes: dict[str, Attribute]):
+        return self.get_aggregate("MIN", attr_name, attributes)
+    
+
+    def get_attribute_max(self, attr_name: str, attributes: dict[str, Attribute]):
+        return self.get_aggregate("MAX", attr_name, attributes)
+        
+
+    def get_attribute_min_max(self, attr_name: str, attributes: dict[str, Attribute] = None) -> Tuple[int,int]:
+        return self.get_attribute_min(attr_name, attributes), self.get_attribute_max(attr_name, attributes)
     
 
     def get_median(self, attr_name: str, attributes: dict[str, Attribute], partition_size: int) -> int:
@@ -108,11 +120,10 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
 
         return int(value[0])
     
-    
 
     def get_value_to_split_at_and_next_unique_value(self,  attr_name: str, partition: Partition) -> Tuple[int, int]:        
         median = self.get_median(attr_name, partition.attributes, partition.count)
-        (_, max_value) = self.get_attribute_min_max(attr_name, partition.attributes)
+        max_value = self.get_attribute_max(attr_name, partition.attributes)
 
         value_to_split_at: int
         next_unique_value: int
