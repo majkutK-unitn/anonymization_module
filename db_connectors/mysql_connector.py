@@ -147,7 +147,27 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
     
 
     def spread_attribute_into_uniform_buckets(self, attr_name: str, num_of_buckets: int) -> list[NumRange]:
-        pass
+        interval_size = 100 / num_of_buckets            
+        percentiles = [interval_size*i for i in range(1, num_of_buckets + 1)]
+        
+        bucket_upper_bounds = list(set([self.get_value_at_percentile(attr_name, None, Config.size_of_dataset, percentile) for percentile in percentiles]        ))
+        bucket_upper_bounds.sort()
+
+        min = self.get_attribute_min(attr_name, None)
+
+        num_ranges: list[NumRange] = []
+
+        for i, bound in enumerate(bucket_upper_bounds):
+            if i == 0:
+                num_ranges.append(NumRange(min, bound))                
+                continue
+
+            if bucket_upper_bounds[i-1] == bound:
+                num_ranges.append(NumRange(bound, bound))
+            else:
+                num_ranges.append(NumRange(bucket_upper_bounds[i-1] + 1, bound))            
+
+        return num_ranges
     
         
     def map_numerical_attr_to_es_range(self, attr_name: str, attribute: Attribute):
