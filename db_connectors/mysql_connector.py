@@ -93,17 +93,25 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
         return self.get_attribute_min(attr_name, attributes), self.get_attribute_max(attr_name, attributes)
     
 
-    def get_median(self, attr_name: str, attributes: dict[str, Attribute], partition_size: int) -> int:
-        where = self.map_attributes_to_where_conditions(attributes)
-        middle_index = int(partition_size*0.5)
+    def get_value_at_percentile(self, attr_name: str, attributes: dict[str, Attribute], partition_size: int, percentile: float) -> int:
+        if int(percentile) >= 100:
+            return self.get_attribute_max(attr_name, attributes)
 
-        query = f"SELECT {attr_name} FROM {self.TABLE_NAME} {where} ORDER BY {attr_name} DESC LIMIT {middle_index},1"
+        where = self.map_attributes_to_where_conditions(attributes)
+        index = int(partition_size * (percentile / 100))
+
+        query = f"SELECT {attr_name} FROM {self.TABLE_NAME} {where} ORDER BY {attr_name} DESC LIMIT {index},1"
 
         cursor = self.mysql_client.cursor()
         cursor.execute(query)
-        median = cursor.fetchone()
+        value_at_percentile = cursor.fetchone()
 
-        return int(median[0])
+        return int(value_at_percentile[0])
+    
+
+    def get_median(self, attr_name: str, attributes: dict[str, Attribute], partition_size: int) -> int:
+        return self.get_value_at_percentile(attr_name, attributes, partition_size, 50)
+
     
     def get_unique_next_or_prev_value(self, direction: str, attr_name, attributes: dict[str, Attribute], central_value: int):
         assert direction in ["NEXT", "PREVIOUS"]
