@@ -147,16 +147,13 @@ class EsConnector(MondrianAPI, DataflyAPI):
             yield from self.map_docs_to_individual_anonymized_docs(original_docs, doc_with_qids)
 
 
-    def create_index(self):
+    def create_index(self, attributes: dict[str, Attribute]):
         """Creates an index in Elasticsearch if one isn't already there."""
 
         try:
             self.es_client.indices.create(
                 index=self.ANON_INDEX_NAME,
-                mappings={"properties": 
-                          {num_attr_name: {"type": "integer_range"} for num_attr_name in Config.numerical_attr_config.keys()} |
-                          {cat_attr_name: {"type": "keyword"} for cat_attr_name in Config.categorical_attr_config.keys()}
-                        }
+                mappings={"properties": {name: attr.get_es_property_mapping() for name, attr in attributes.items()}}
             )
         except RequestError as exception:
             if exception.error != "resource_already_exists_exception":
@@ -164,7 +161,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
 
 
     def push_partitions(self, partitions: list[Partition]):
-        self.create_index()
+        self.create_index(partitions[0].attributes)
 
         progress = tqdm.tqdm(unit="docs", total=Config.size_of_dataset)
         successes = 0
@@ -301,30 +298,9 @@ class EsConnector(MondrianAPI, DataflyAPI):
 # ------------------------------
 
 
-
-    def map_attributes_to_query(self, attributes: dict[str, Attribute]):
-        must = []
-
-        for attr_name in attributes.keys():
-            node_or_range = Config.attr_metadata[attr_name]
-
-            if isinstance(node_or_range, GenTree):                
-                current_node = node_or_range.node(attributes[attr_name].gen_value)                
-
-                must.append({"terms": {f"{attr_name}": current_node.get_leaf_node_values()}})
-            else:
-                range_min_and_max = attributes[attr_name].gen_value.split(',')
-                # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
-                if len(range_min_and_max) <= 1:                    
-                    must.append({"term": {attr_name: range_min_and_max[0]}})                    
-                else:
-                    must.append({"range": {
-                        attr_name: {
-                            "gte": range_min_and_max[0],
-                            "lte": range_min_and_max[1]
-                            }}})
+    def map_attributes_to_query(self, attributes: dict[str, Attribute]):        
         return {
             "bool": {
-                "must": must
+                "must": [attr.map_to_es_query() for attr in attributes.values()]
             }    
         }

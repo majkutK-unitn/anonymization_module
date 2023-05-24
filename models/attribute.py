@@ -38,6 +38,14 @@ class Attribute(ABC):
     def map_to_es_query(self) -> dict:
         pass
 
+    @abstractmethod
+    def map_to_es_attribute(self) -> dict:
+        pass
+
+    @abstractmethod
+    def get_es_property_mapping(self) -> dict:
+        pass
+
 
 class HierarchicalAttribute(Attribute):        
     def split(self) -> list[Attribute]:
@@ -58,6 +66,16 @@ class HierarchicalAttribute(Attribute):
         current_node = Config.attr_metadata[self.name].node(self.gen_value)                
 
         return {"terms": {f"{self.name}": current_node.get_leaf_node_values()}}
+    
+
+    def get_es_property_mapping(self):
+        return {"type": "keyword"}
+    
+
+    def map_to_es_attribute(self):
+        current_node = Config.attr_metadata[self.name].node(self.gen_value)
+
+        return current_node.get_leaf_node_values()
     
 
 class NumericalAttribute(Attribute):
@@ -84,6 +102,19 @@ class NumericalAttribute(Attribute):
             return {"term": {self.name: range_min_and_max[0]}}
         else:
             return {"range": { self.name: { "gte": range_min_and_max[0], "lte": range_min_and_max[1]}}}
+    
+
+    def get_es_property_mapping(self):
+        return {"type": "integer_range"}
+    
+    
+    def map_to_es_attribute(self):
+        min_max = self.gen_value.split(",")
+
+        return {
+            "gte": min_max[0],
+            "lte": min_max[1] if len(min_max) > 1 else min_max[0]
+        }
 
 
 class MondrianNumericalAttribute(NumericalAttribute):
@@ -113,3 +144,7 @@ class MondrianTimestampAttribute(MondrianNumericalAttribute):
                 gen_value=attr.gen_value, 
                 split_allowed=attr.split_allowed) 
             for attr in super().split()]
+
+
+    def get_es_property_mapping(self):
+        return {"type": "date_range"}
