@@ -169,7 +169,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         progress = tqdm.tqdm(unit="docs", total=Config.size_of_dataset)
         successes = 0
 
-        for ok, action in streaming_bulk(client=self.es_client, index=self.ANON_INDEX_NAME, actions=self.generate_anonymized_docs(partitions),):
+        for ok, action in streaming_bulk(client=self.es_client, index=self.ANON_INDEX_NAME, actions=self.generate_anonymized_docs(partitions)):
             progress.update(1)
             successes += ok
 
@@ -311,7 +311,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
             if isinstance(node_or_range, GenTree):                
                 current_node = node_or_range.node(attributes[attr_name].gen_value)                
 
-                must.append({"terms": {f"{attr_name}.keyword": current_node.get_leaf_node_values()}})
+                must.append({"terms": {f"{attr_name}": current_node.get_leaf_node_values()}})
             else:
                 range_min_and_max = attributes[attr_name].gen_value.split(',')
                 # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
