@@ -105,15 +105,11 @@ class MondrianNumericalAttribute(NumericalAttribute):
 
 
 class MondrianTimestampAttribute(MondrianNumericalAttribute):
-    pass
-    # def set_limits(self, limits):
-    #     self.limits = [(parser.parse(min_value), parser.parse(max_value)) for (min_value, max_value) in limits]
-    
-    
-    # def map_to_es_query(self) -> dict:
-    #     range_min_and_max = [datetime.fromtimestamp(gen_val).isoformat() for gen_val in self.gen_value.split(',')]
-    #     # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
-    #     if len(range_min_and_max) <= 1:                    
-    #         return {"term": {self.name: range_min_and_max[0]}}
-    #     else:
-    #         return {"range": { self.name: { "gte": range_min_and_max[0], "lte": range_min_and_max[1]}}}
+    def split(self) -> list[MondrianTimestampAttribute]:
+        return [
+            MondrianTimestampAttribute(
+                name=attr.name, 
+                width=attr.width, 
+                gen_value=attr.gen_value, 
+                split_allowed=attr.split_allowed) 
+            for attr in super().split()]
