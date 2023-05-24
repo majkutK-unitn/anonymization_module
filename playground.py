@@ -1,16 +1,21 @@
+from datetime import datetime
 import json
+from math import ceil
+
+from dateutil import parser
 
 from algorithms.datafly.datafly import Datafly
 
 from db_connectors.es_connector import EsConnector
+from db_connectors.mysql_connector import MySQLConnector
 
 from models.attribute import Attribute
 from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
 from models.config import Config
-from utils.config_processor import parse_config
 
+from utils.config_processor import parse_config
 from utils.gen_hierarchy_parser import read_gen_hierarchies_from_json, read_gen_hierarchies_from_text
 
 
@@ -105,4 +110,28 @@ def __test__get_node_leaf_values():
     node = Config.attr_metadata["marital_status"].node("leave")
     print(node.get_leaf_node_values())
 
-__test__get_node_leaf_values()
+def __test__date_handling():
+    config_file = open('configs/kibana_data_logs.json')
+    config = json.load(config_file)
+    config_file.close()    
+    parse_config(config, ES_CONNECTOR)
+    
+    attr_name = "bytes"
+
+    aggs = {            
+        f"{attr_name}_min": { "min": { "field": attr_name } },
+        f"{attr_name}_max": { "max": { "field": attr_name } },
+    }
+
+    res = ES_CONNECTOR.es_client.search(index=ES_CONNECTOR.INDEX_NAME, aggs=aggs)
+
+    ts_datetime = parser.parse(res["hits"]["hits"][0]["_source"]["timestamp"])
+    date_in_seconds = datetime.timestamp(ts_datetime)
+    datetime_again = datetime.fromtimestamp(date_in_seconds)
+
+    ts_round_up = ceil(date_in_seconds)    
+    ts_round_down = int(date_in_seconds)
+
+    return int(res["aggregations"][f"{attr_name}_min"]['value']), int(res["aggregations"][f"{attr_name}_max"]['value'])
+
+__test__date_handling()
