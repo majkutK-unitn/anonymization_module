@@ -234,7 +234,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         res = self.es_client.search(index=self.INDEX_NAME, query=query, aggs=aggs, size=0)
         value = res["aggregations"][f"{attr_name}_{func}_in_partition"]['value']
 
-        return int(value)
+        return int(value) if value else None
 
 
     def get_value_to_split_at_and_next_unique_value(self, attr_name: str, partition: Partition) -> Tuple[int, int]:
