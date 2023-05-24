@@ -2,16 +2,21 @@
     "k": 10,    
     "sensitive_attributes": ["host", "request"],
     "qids": {
+        "timestamp": {
+            "type": "timestamp"
+        },
         "bytes": {
+            "type": "numerical",
             "datafly_num_of_buckets": 20
         },
         "geo.dest": {
+            "type": "hierarchical",
             "datafly_init_level": 2,
             "tree": {
                 "value": "*",
                 "children": [
                     {
-                        "value": "Africa",
+                        "value": "Africa", 
                         "children": [
                             {
                                 "value": "Central Africa",

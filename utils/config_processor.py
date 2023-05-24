@@ -16,6 +16,8 @@ def parse_config(config: dict[str, int|dict], db_connector: AbstractAPI):
 
     Config.categorical_attr_config = dict(filter(lambda attr: "tree" in attr[1], config["qids"].items()))
     Config.numerical_attr_config = dict(filter(lambda attr: "tree" not in attr[1], config["qids"].items()))
+
+    Config.qids_config = config["qids"]
     
     Config.gen_hiers = read_gen_hierarchies_from_json(Config.categorical_attr_config)
 
