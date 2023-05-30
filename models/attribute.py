@@ -147,3 +147,32 @@ class DateAttribute(RangeAttribute):
                 gen_value=attr_val_tuple[2], 
                 split_allowed=attr_val_tuple[3]) 
             for attr_val_tuple in super().split()]
+    
+
+class TimestampInMsAttribute(DateAttribute):
+    def __init__(self, name: str, width: int, gen_value: str, split_allowed: bool = True):
+        self.num_attr = IntegerAttribute(name, width, gen_value, split_allowed)        
+
+    def get_name(self):
+        return self.num_attr.get_name()
+
+    def get_width(self):
+        return self.num_attr.get_width()
+
+    def get_gen_value(self):
+        return self.num_attr.get_gen_value()
+
+    def get_split_allowed(self):
+        return self.num_attr.get_split_allowed()
+    
+    def set_limits(self, limits):
+        self.num_attr.set_limits(limits)
+
+    def split(self) -> list[TimestampInMsAttribute]:
+        return [
+            TimestampInMsAttribute(
+                name=attr.get_name(), 
+                width=attr.get_width(), 
+                gen_value=attr.get_gen_value(), 
+                split_allowed=attr.get_split_allowed()) 
+            for attr in self.num_attr.split()]

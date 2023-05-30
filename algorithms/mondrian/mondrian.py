@@ -4,11 +4,10 @@ import warnings
 from interfaces.abstract_algorithm import AbstractAlgorithm
 from interfaces.mondrian_api import MondrianAPI
 
-from models.attribute import Attribute, HierarchicalAttribute
+from models.attribute import Attribute, HierarchicalAttribute, IntegerAttribute, RangeAttribute, TimestampInMsAttribute
 from models.config import Config
 
 from algorithms.mondrian.models.mondrian_partition import MondrianPartition
-from algorithms.mondrian.models.mondrian_attriibutes import MondrianNumericalAttribute, MondrianTimestampAttribute
 
 from utils.config_processor import parse_config
 
@@ -26,12 +25,12 @@ class Mondrian(AbstractAlgorithm):
     def create_subpartitions_splitting_along(self, attribute: Attribute, partition: MondrianPartition) -> list[MondrianPartition]:
         subpartitions: list[MondrianPartition] = []
 
-        if isinstance(attribute, MondrianNumericalAttribute):
-            (median, next_unique_value) = self.db_connector.get_value_to_split_at_and_next_unique_value(attribute.name, partition)
+        if isinstance(attribute, RangeAttribute):
+            (median, next_unique_value) = self.db_connector.get_value_to_split_at_and_next_unique_value(attribute.get_name(), partition)
             if median is None or next_unique_value is None:
                 return []
 
-            (min_value, max_value) = self.db_connector.get_attribute_min_max(attribute.name, partition.attributes)
+            (min_value, max_value) = self.db_connector.get_attribute_min_max(attribute.get_name(), partition.attributes)
 
             attribute.set_limits([(min_value, median), (next_unique_value, max_value)])
 
@@ -39,7 +38,7 @@ class Mondrian(AbstractAlgorithm):
         
         for attr in split_attributes:            
             new_partition_attributes = partition.attributes.copy()
-            new_partition_attributes[attr.name] = attr     
+            new_partition_attributes[attr.get_name()] = attr     
 
             subpartitions.append(MondrianPartition(self.db_connector.get_document_count(new_partition_attributes), new_partition_attributes))
 
@@ -69,7 +68,7 @@ class Mondrian(AbstractAlgorithm):
             # The same Attribute object should not be directly manipulated, as other MondrianPartitions might also rely on it. A fresh one must be created.   
             copied_attr = copy.copy(attr_to_split)
             copied_attr.split_allowed = False
-            partition.attributes[attr_to_split.name] = copied_attr
+            partition.attributes[attr_to_split.get_name()] = copied_attr
             self.anonymize(partition)
         else:
             if sum(sub_p.count for sub_p in subpartitions) != partition.count:    
@@ -91,10 +90,10 @@ class Mondrian(AbstractAlgorithm):
                 attributes[attr_name] = HierarchicalAttribute(attr_name, len(root_node_or_num_range), root_node_or_num_range.value)
 
             if value["type"] == "numerical":
-                attributes[attr_name] = MondrianNumericalAttribute(attr_name, len(root_node_or_num_range), root_node_or_num_range.value)
+                attributes[attr_name] = IntegerAttribute(attr_name, len(root_node_or_num_range), root_node_or_num_range.value)
             
             if value["type"] == "timestamp":
-                attributes[attr_name] = MondrianTimestampAttribute(attr_name, len(root_node_or_num_range), root_node_or_num_range.value)
+                attributes[attr_name] = TimestampInMsAttribute(attr_name, len(root_node_or_num_range), root_node_or_num_range.value)
                         
 
         whole_partition_size = self.db_connector.get_document_count(attributes)
