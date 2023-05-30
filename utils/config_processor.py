@@ -29,16 +29,10 @@ def parse_config(config: dict[str, int|dict], db_connector: AbstractAPI):
 def _init_partitions_metadata(db_connector: AbstractAPI):    
     gen_hiers_and_num_ranges: dict[str, NumRange|GenTree] = Config.gen_hiers
 
-    for attr_name, value in Config.qids_config.items():
-        root_node_or_num_range: NumRange | GenTree
-
-        if value["type"] == "hierarchical":
-            root_node_or_num_range = Config.gen_hiers[attr_name]
-
+    for attr_name, value in Config.qids_config.items():        
         if value["type"] == "numerical" or value["type"] == "timestamp":
-            (min, max) = db_connector.get_attribute_min_max(attr_name)
-            root_node_or_num_range = NumRange(min, max)
-            gen_hiers_and_num_ranges[attr_name] = root_node_or_num_range
+            (min, max) = db_connector.get_attribute_min_max(attr_name)            
+            gen_hiers_and_num_ranges[attr_name] = NumRange(min, max)
         
         if value["type"] == "ip":
             gen_hiers_and_num_ranges[attr_name] = NumRange(0, 1)
