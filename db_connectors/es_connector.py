@@ -109,7 +109,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
 
 
     def map_numerical_attr_to_es_range(self, attribute: Attribute):
-        min_max = attribute.gen_value.split(",")
+        min_max = attribute.get_gen_value().split(",")
 
         return {
             "gte": min_max[0],

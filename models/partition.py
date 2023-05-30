@@ -18,4 +18,4 @@ class Partition(object):
         self.attributes = attributes
 
     def __str__(self) -> str:
-        return functools.reduce(lambda a,b: f"{a}, {b}", map(lambda attr_name_and_value: f"'{attr_name_and_value[0]}': '{attr_name_and_value[1].gen_value}'", self.attributes.items()))
+        return functools.reduce(lambda a,b: f"{a}, {b}", map(lambda attr_name_and_value: f"'{attr_name_and_value[0]}': '{attr_name_and_value[1].get_gen_value()}'", self.attributes.items()))

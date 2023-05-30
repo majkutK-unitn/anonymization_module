@@ -20,7 +20,7 @@ class AbstractAlgorithm(ABC):
     def get_normalized_width(self, partition: Partition, qid_name: str) -> float:    
         """ Return Normalized width of partition """        
 
-        return partition.attributes[qid_name].width * 1.0 / len(Config.attr_metadata[qid_name])
+        return partition.attributes[qid_name].get_width() * 1.0 / len(Config.attr_metadata[qid_name])
 
 
     def calculate_ncp(self):

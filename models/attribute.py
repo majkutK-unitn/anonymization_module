@@ -23,8 +23,20 @@ class Attribute(ABC):
         self.split_allowed = split_allowed
 
 
+    def get_name(self):
+        return self.name
+
+    def get_width(self):
+        return self.width
+
+    def get_gen_value(self):
+        return self.gen_value
+
+    def get_split_allowed(self):
+        return self.split_allowed
+
     def get_normalized_width(self) -> float:
-        return self.width * 1.0 / len(Config.attr_metadata[self.name])
+        return self.get_width() * 1.0 / len(Config.attr_metadata[self.get_name()])
     
 
     @abstractmethod
@@ -46,11 +58,11 @@ class Attribute(ABC):
 
 class HierarchicalAttribute(Attribute):        
     def split(self) -> list[Attribute]:
-        node_to_split_at: GenTree = Config.attr_metadata[self.name].node(self.gen_value)
+        node_to_split_at: GenTree = Config.attr_metadata[self.get_name()].node(self.get_gen_value())
         
         return [
             HierarchicalAttribute(
-                name=self.name,
+                name=self.get_name(),
                 width=len(child),
                 gen_value=child.value,
                 split_allowed=bool(len(child.children))
@@ -60,9 +72,9 @@ class HierarchicalAttribute(Attribute):
 
 
     def map_to_es_query(self) -> dict:
-        current_node = Config.attr_metadata[self.name].node(self.gen_value)                
+        current_node = Config.attr_metadata[self.get_name()].node(self.gen_value)                
 
-        return {"terms": {f"{self.name}": current_node.get_leaf_node_values()}}
+        return {"terms": {f"{self.get_name()}": current_node.get_leaf_node_values()}}
     
 
     def get_es_property_mapping(self):
@@ -70,10 +82,9 @@ class HierarchicalAttribute(Attribute):
     
 
     def map_to_es_attribute(self):
-        current_node = Config.attr_metadata[self.name].node(self.gen_value)
+        current_node = Config.attr_metadata[self.get_name()].node(self.get_gen_value())
 
         return current_node.get_leaf_node_values()
-    
 
 class NumericalAttribute(Attribute):
     @abstractmethod
@@ -83,7 +94,7 @@ class NumericalAttribute(Attribute):
     def split(self) -> list[NumericalAttribute]:
         return [
             (
-                self.name, 
+                self.get_name(), 
                 new_max - new_min, 
                 f"{new_min},{new_max}" if new_min != new_max else str(new_min), 
                 new_min != new_max
@@ -93,10 +104,10 @@ class NumericalAttribute(Attribute):
     
     
     def map_to_es_query(self) -> dict:
-        range_min_and_max = self.gen_value.split(',')
+        range_min_and_max = self.get_gen_value().split(',')
         # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
         if len(range_min_and_max) <= 1:                    
-            return {"term": {self.name: range_min_and_max[0]}}
+            return {"term": {self.get_name(): range_min_and_max[0]}}
         else:
             return {"range": { self.name: { "gte": range_min_and_max[0], "lte": range_min_and_max[1]}}}
     
@@ -106,7 +117,7 @@ class NumericalAttribute(Attribute):
     
     
     def map_to_es_attribute(self):
-        min_max = self.gen_value.split(",")
+        min_max = self.get_gen_value().split(",")
 
         return {
             "gte": min_max[0],

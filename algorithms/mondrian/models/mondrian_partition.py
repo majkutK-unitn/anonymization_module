@@ -9,7 +9,7 @@ class MondrianPartition(Partition):
     """ Extend the Partition class with algorithm-specific methods """
 
     def check_if_splittable(self) -> bool:
-        if self.count >= 2 * Config.k and sum(map(lambda attr: attr.split_allowed, self.attributes.values())):
+        if self.count >= 2 * Config.k and sum(map(lambda attr: attr.get_split_allowed(), self.attributes.values())):
             return True
 
         return False
@@ -22,7 +22,7 @@ class MondrianPartition(Partition):
         chosen_attr: Attribute = None
 
         for attr_name, attr in self.attributes.items():
-            if self.attributes[attr_name].split_allowed:
+            if self.attributes[attr_name].get_split_allowed():
                 normalized_width = attr.get_normalized_width()
             
                 if normalized_width > max_norm_width:
