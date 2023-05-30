@@ -56,6 +56,10 @@ class Attribute(ABC):
         pass
 
     @abstractmethod
+    def map_to_sql_attribute(self) -> dict:
+        pass
+
+    @abstractmethod
     def get_es_property_mapping(self) -> dict:
         pass
 
@@ -95,6 +99,12 @@ class HierarchicalAttribute(Attribute):
         current_node = Config.attr_metadata[self.get_name()].node(self.get_gen_value())
 
         return current_node.get_leaf_node_values()
+    
+
+    def map_to_sql_attribute(self) -> dict:
+        return {self.get_name(): self.get_gen_value()}
+    
+    
 
 
 class RangeAttribute(Attribute):
@@ -137,6 +147,15 @@ class RangeAttribute(Attribute):
         return {
             "gte": min_max[0],
             "lte": min_max[1] if len(min_max) > 1 else min_max[0]
+        }
+    
+
+    def map_to_sql_attribute(self) -> dict:
+        min_max = self.get_gen_value().split(",")
+
+        return {
+            f"{self.get_name()}_from": min_max[0],
+            f"{self.get_name()}_to": min_max[1] if len(min_max) > 1 else min_max[0]
         }
     
 
