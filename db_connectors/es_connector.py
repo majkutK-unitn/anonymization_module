@@ -24,7 +24,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         ROOT_CA_PATH = getenv('ROOT_CA_PATH')
         
         self.INDEX_NAME = getenv('INDEX_NAME')
-        self.ANON_INDEX_NAME = f"{self.INDEX_NAME}-anonymized"
+        self.ANON_INDEX_NAME = f"{self.INDEX_NAME}_anonymized"
 
         self.es_client = Elasticsearch(
                 hosts=["https://neteye2.test:9200"],
