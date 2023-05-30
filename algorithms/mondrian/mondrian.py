@@ -1,5 +1,4 @@
 import copy
-import warnings
 
 from interfaces.abstract_algorithm import AbstractAlgorithm
 from interfaces.mondrian_api import MondrianAPI
@@ -101,7 +100,7 @@ class Mondrian(AbstractAlgorithm):
 
         whole_partition_size = self.db_connector.get_document_count(attributes)
         if whole_partition_size != Config.size_of_dataset:
-            warnings.warn(f"\n\n\n{'='*35}\tWARNING!\t{'='*35}\n\t>> The initial partition does not cover the entire dataset!\n{'='*91}\n\n")
+            print(f"\n\n\n{'='*35}\tWARNING!\t{'='*35}\n\t>> The initial partition does not cover the entire dataset!\n{'='*91}\n\n")
 
         whole_partition = MondrianPartition(whole_partition_size, attributes)
         
