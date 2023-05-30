@@ -1,8 +1,6 @@
 import functools
 
 from models.attribute import Attribute
-from models.gentree import GenTree
-from models.numrange import NumRange
 
 
 class Partition(object):

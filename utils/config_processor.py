@@ -1,10 +1,8 @@
 from interfaces.abstract_api import AbstractAPI
 
-from models.attribute import Attribute
 from models.config import Config
 from models.gentree import GenTree
 from models.numrange import NumRange
-from models.partition import Partition
 
 from utils.gen_hierarchy_parser import read_gen_hierarchies_from_json
 
