@@ -133,3 +133,17 @@ class IntegerAttribute(RangeAttribute):
                 gen_value=attr_val_tuple[2], 
                 split_allowed=attr_val_tuple[3]) 
             for attr_val_tuple in super().split()]
+    
+
+class DateAttribute(RangeAttribute):
+    def get_es_property_mapping(self):
+        return {"type": "date_range"}
+    
+    def split(self) -> list[DateAttribute]:
+        return [
+            DateAttribute(
+                name=attr_val_tuple[0], 
+                width=attr_val_tuple[1], 
+                gen_value=attr_val_tuple[2], 
+                split_allowed=attr_val_tuple[3]) 
+            for attr_val_tuple in super().split()]
