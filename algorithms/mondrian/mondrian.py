@@ -4,11 +4,11 @@ import warnings
 from interfaces.abstract_algorithm import AbstractAlgorithm
 from interfaces.mondrian_api import MondrianAPI
 
-from models.attribute import Attribute, HierarchicalAttribute, MondrianNumericalAttribute, MondrianTimestampAttribute
+from models.attribute import Attribute, HierarchicalAttribute
 from models.config import Config
-from models.gentree import GenTree
-from models.numrange import NumRange
-from algorithms.mondrian.mondrian_partition import MondrianPartition
+
+from algorithms.mondrian.models.mondrian_partition import MondrianPartition
+from algorithms.mondrian.models.mondrian_attriibutes import MondrianNumericalAttribute, MondrianTimestampAttribute
 
 from utils.config_processor import parse_config
 
