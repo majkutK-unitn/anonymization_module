@@ -70,10 +70,7 @@ class Mondrian(AbstractAlgorithm):
             copied_attr.split_allowed = False
             partition.attributes[attr_to_split.get_name()] = copied_attr
             self.anonymize(partition)
-        else:
-            if sum(sub_p.count for sub_p in subpartitions) != partition.count:    
-                raise Exception("The number of items in the subpartitions is not equal to that of the original partition")
-            
+        else:            
             for sub_p in subpartitions:
                 self.anonymize(sub_p)
 
