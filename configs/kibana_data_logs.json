@@ -5,6 +5,9 @@
         "timestamp": {
             "type": "timestamp"
         },
+        "clientip": {
+            "type": "ip"
+        },
         "bytes": {
             "type": "numerical",
             "datafly_num_of_buckets": 20

@@ -176,3 +176,40 @@ class TimestampInMsAttribute(DateAttribute):
                 gen_value=attr.get_gen_value(), 
                 split_allowed=attr.get_split_allowed()) 
             for attr in self.num_attr.split()]
+    
+
+
+class IpAttribute(RangeAttribute):
+
+    def __init__(self, name: str, split_allowed: bool = True, segments: list[int] = [0, 0, 0, 0], mask: int = 0):        
+        super().__init__(name, 1, f"{segments[0]}.{segments[1]}.{segments[2]}.{segments[3]}/{mask}", split_allowed)
+        self.ip_segments = segments
+        self.mask = mask
+
+
+    def split(self) -> list[Attribute]:
+        index_of_segment_change = int(self.mask / 8)
+        index_of_bit_in_segment_to_change = 7 - (self.mask % 8)
+
+        newly_split_segments = [
+            self.ip_segments.copy(),
+            [s if i != index_of_segment_change else s + pow(2, index_of_bit_in_segment_to_change) for (i, s) in enumerate(self.ip_segments)]
+        ]
+
+        return [
+            IpAttribute(
+                name=self.get_name(),                
+                split_allowed=(self.mask != 31),
+                segments=new_s,
+                mask = self.mask+1
+                )
+            for new_s in newly_split_segments
+        ]
+    
+
+    def get_es_property_mapping(self):
+        return {"type": "ip_range"}
+    
+
+    def map_to_es_attribute(self):
+        return self.get_gen_value()

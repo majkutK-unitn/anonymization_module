@@ -4,7 +4,7 @@ import warnings
 from interfaces.abstract_algorithm import AbstractAlgorithm
 from interfaces.mondrian_api import MondrianAPI
 
-from models.attribute import Attribute, HierarchicalAttribute, IntegerAttribute, RangeAttribute, TimestampInMsAttribute
+from models.attribute import Attribute, HierarchicalAttribute, IntegerAttribute, IpAttribute, TimestampInMsAttribute
 from models.config import Config
 
 from algorithms.mondrian.models.mondrian_partition import MondrianPartition
@@ -25,7 +25,7 @@ class Mondrian(AbstractAlgorithm):
     def create_subpartitions_splitting_along(self, attribute: Attribute, partition: MondrianPartition) -> list[MondrianPartition]:
         subpartitions: list[MondrianPartition] = []
 
-        if isinstance(attribute, RangeAttribute):
+        if isinstance(attribute, IntegerAttribute) or isinstance(attribute, TimestampInMsAttribute):
             (median, next_unique_value) = self.db_connector.get_value_to_split_at_and_next_unique_value(attribute.get_name(), partition)
             if median is None or next_unique_value is None:
                 return []
@@ -94,6 +94,9 @@ class Mondrian(AbstractAlgorithm):
             
             if value["type"] == "timestamp":
                 attributes[attr_name] = TimestampInMsAttribute(attr_name, len(root_node_or_num_range), root_node_or_num_range.value)
+            
+            if value["type"] == "ip":
+                attributes[attr_name] = IpAttribute(attr_name)
                         
 
         whole_partition_size = self.db_connector.get_document_count(attributes)
