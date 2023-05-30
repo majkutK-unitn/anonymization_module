@@ -108,41 +108,14 @@ class EsConnector(MondrianAPI, DataflyAPI):
         yield anon_doc_with_qids | sensitive_attributes
 
 
-    def map_numerical_attr_to_es_range(self, attribute: Attribute):
-        min_max = attribute.get_gen_value().split(",")
-
-        return {
-            "gte": min_max[0],
-            "lte": min_max[1] if len(min_max) > 1 else min_max[0]
-        }
-    
-
-    def map_categorical_attr_to_leaf_values(self, attr_name: str, gen_value: str):
-        current_node = Config.attr_metadata[attr_name].node(gen_value)
-
-        return current_node.get_leaf_node_values()
-    
-
-    def map_attributes_to_es_data_types(self, partition: Partition) -> dict[str, dict|str]:
-        doc_with_qids = {}
-
-        for attr_name, attribute in partition.attributes.items():
-            if attr_name in Config.numerical_attr_config.keys():
-                doc_with_qids[attr_name] = self.map_numerical_attr_to_es_range(attribute)
-            else:
-                doc_with_qids[attr_name] = self.map_categorical_attr_to_leaf_values(attr_name, attribute.gen_value)
-
-        return doc_with_qids
-
-
     def generate_anonymized_docs(self, partitions: list[Partition]):
         for partition in partitions:
             query = self.map_attributes_to_query(partition.attributes)
 
             res = self.es_client.search(index=self.INDEX_NAME, query=query, fields=Config.sensitive_attr_names, _source=False, size=partition.count)
             original_docs = list(map(lambda hit: hit["fields"], res["hits"]["hits"]))
-
-            doc_with_qids = self.map_attributes_to_es_data_types(partition)
+            
+            doc_with_qids = {attr_name: attribute.map_to_es_attribute() for attr_name, attribute in partition.attributes.items()}
             
             yield from self.map_docs_to_individual_anonymized_docs(original_docs, doc_with_qids)
 
