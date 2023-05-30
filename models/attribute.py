@@ -48,6 +48,10 @@ class Attribute(ABC):
         pass
 
     @abstractmethod
+    def map_to_sql_query(self) -> str:
+        pass
+
+    @abstractmethod
     def map_to_es_attribute(self) -> dict:
         pass
 
@@ -75,6 +79,12 @@ class HierarchicalAttribute(Attribute):
         current_node = Config.attr_metadata[self.get_name()].node(self.gen_value)                
 
         return {"terms": {f"{self.get_name()}": current_node.get_leaf_node_values()}}
+
+
+    def map_to_sql_query(self) -> str:
+        current_node = Config.attr_metadata[self.get_name()].node(self.get_gen_value())
+        leaf_values_as_str = ",".join([f"'{s}'" for s in current_node.get_leaf_node_values()])
+        return f"{self.get_name()} IN ({leaf_values_as_str})"
     
 
     def get_es_property_mapping(self):
@@ -109,7 +119,16 @@ class RangeAttribute(Attribute):
         if len(range_min_and_max) <= 1:                    
             return {"term": {self.get_name(): range_min_and_max[0]}}
         else:
-            return {"range": { self.get_name(): { "gte": range_min_and_max[0], "lte": range_min_and_max[1]}}}        
+            return {"range": { self.get_name(): { "gte": range_min_and_max[0], "lte": range_min_and_max[1]}}}
+    
+
+    def map_to_sql_query(self) -> str:
+        range_min_and_max = self.get_gen_value().split(',')
+        
+        if len(range_min_and_max) <= 1:
+            return f"{self.get_name()} = {range_min_and_max[0]}"              
+        else:
+            return f"({self.get_name()} >= {range_min_and_max[0]} AND {self.get_name()} <= {range_min_and_max[1]})"
     
     
     def map_to_es_attribute(self):
