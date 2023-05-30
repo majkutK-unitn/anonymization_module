@@ -86,12 +86,12 @@ class HierarchicalAttribute(Attribute):
 
         return current_node.get_leaf_node_values()
 
-class NumericalAttribute(Attribute):
-    @abstractmethod
-    def get_new_limits() -> list[(int, int)]:
-        pass
 
-    def split(self) -> list[NumericalAttribute]:
+class RangeAttribute(Attribute):
+    def set_limits(self, limits: list[str]):
+        self.limits = limits
+
+    def split(self) -> list[RangeAttribute]:
         return [
             (
                 self.get_name(), 
@@ -99,7 +99,7 @@ class NumericalAttribute(Attribute):
                 f"{new_min},{new_max}" if new_min != new_max else str(new_min), 
                 new_min != new_max
             ) 
-            for (new_min, new_max) in self.get_new_limits()
+            for (new_min, new_max) in self.limits
         ]
     
     
@@ -109,11 +109,7 @@ class NumericalAttribute(Attribute):
         if len(range_min_and_max) <= 1:                    
             return {"term": {self.get_name(): range_min_and_max[0]}}
         else:
-            return {"range": { self.name: { "gte": range_min_and_max[0], "lte": range_min_and_max[1]}}}
-    
-
-    def get_es_property_mapping(self):
-        return {"type": "integer_range"}
+            return {"range": { self.get_name(): { "gte": range_min_and_max[0], "lte": range_min_and_max[1]}}}        
     
     
     def map_to_es_attribute(self):
