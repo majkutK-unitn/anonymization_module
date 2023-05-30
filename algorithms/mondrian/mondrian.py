@@ -37,13 +37,14 @@ class Mondrian(AbstractAlgorithm):
         
         for attr in split_attributes:            
             new_partition_attributes = partition.attributes.copy()
-            new_partition_attributes[attr.get_name()] = attr     
+            new_partition_attributes[attr.get_name()] = attr
 
             subpartitions.append(MondrianPartition(self.db_connector.get_document_count(new_partition_attributes), new_partition_attributes))
 
         if sum(sub_p.count for sub_p in subpartitions) != partition.count:    
             raise Exception("The number of items in the subpartitions is not equal to that of the original partition")
 
+        # If a partition with less than k items is created, splitting along this attribute is not possible
         if sum(sub_p.count for sub_p in filter(lambda p: p.count >= Config.k, subpartitions)) != partition.count:
             return []
 
