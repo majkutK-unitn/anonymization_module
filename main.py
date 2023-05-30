@@ -1,5 +1,8 @@
 import json
+
 import time
+
+from os import getenv
 
 from algorithms.datafly.datafly import Datafly
 from algorithms.mondrian.mondrian import Mondrian
@@ -53,7 +56,12 @@ def main(args: dict):
 
     start_time = time.time()
 
-    print(f"Running {algorithm_name} on {db_backend} backend with k={config['k']}...")
+    print(f"""Running anonymization
+    - target dataset: {getenv('MYSQL_TABLE_NAME') if db_backend == "MySQL" else getenv('INDEX_NAME')}
+    - database: {db_backend}
+    - config file: {config_file_path}
+    - algorithm: {algorithm_name}
+    - k: {config['k']}""")
 
     algorithm.run(config)
     

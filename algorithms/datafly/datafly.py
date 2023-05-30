@@ -1,7 +1,7 @@
 from interfaces.abstract_algorithm import AbstractAlgorithm
 from interfaces.datafly_api import DataflyAPI
 
-from models.attribute import Attribute
+from models.attribute import Attribute, HierarchicalAttribute, IntegerAttribute
 from models.config import Config
 from models.gentree import GenTree
 from models.numrange import NumRange
@@ -15,13 +15,23 @@ class Datafly(AbstractAlgorithm):
         self.db_connector = db_connector        
         self.final_partitions : list[Partition] = []
 
+    
+    def create_attribute(self, attr_name: str, range_or_node: GenTree | NumRange):
+        attr_type = Config.qids_config[attr_name]["type"]
+
+        if attr_type == "hierarchical":
+            return HierarchicalAttribute(attr_name, len(range_or_node), range_or_node.value)
+
+        if attr_type == "numerical":
+            return IntegerAttribute(attr_name, len(range_or_node), range_or_node.value)
+
 
     def combine_attribute_with_existing_partitions(self, existing_partitions: list[dict[str, Attribute]], attr_name: str, range_or_node: GenTree | NumRange):
         new_partitions: list[dict[str, Attribute]] = []
 
         for partition_existing in existing_partitions:
             partition_new = partition_existing.copy()
-            partition_new[attr_name] = Attribute(len(range_or_node), range_or_node.value)
+            partition_new[attr_name] = self.create_attribute(attr_name, range_or_node)
             new_partitions.append(partition_new)
 
         return new_partitions
@@ -74,7 +84,7 @@ class Datafly(AbstractAlgorithm):
         # An ordered list is required, as it is the adjacent partitions that are meant to be merged
         attr_values.sort()
         # key: old attribute values, value: the merged attribute values
-        old_to_new_ranges: dict[str, Attribute] = {}
+        old_to_new_ranges: dict[str, IntegerAttribute] = {}
 
         for i in range(int(len(attr_values) / 2)):
             lower = attr_values[2*i].split(",")
@@ -85,7 +95,7 @@ class Datafly(AbstractAlgorithm):
 
             gen_value = f"{min_val},{max_val}"
             width = max_val - min_val
-            new_attribute = Attribute(width, gen_value)
+            new_attribute = IntegerAttribute(attr_name, width, gen_value)
 
             old_to_new_ranges[attr_values[2*i]] = new_attribute
             old_to_new_ranges[attr_values[2*i + 1]] = new_attribute
@@ -94,7 +104,7 @@ class Datafly(AbstractAlgorithm):
             gen_value = attr_values[-1]
             min_max = gen_value.split(",")
             width = 0 if len(gen_value) == 1 else int(min_max[1]) - int(min_max[0])
-            old_to_new_ranges[gen_value] = Attribute(width, gen_value)
+            old_to_new_ranges[gen_value] = IntegerAttribute(attr_name, width, gen_value)
 
 
         for partition in self.final_partitions:            
@@ -109,7 +119,7 @@ class Datafly(AbstractAlgorithm):
         curr_max_level_in_hier_tree = max(map(lambda p: root.node(p.attributes[attr_name].gen_value).level, self.final_partitions))
 
         for partition in self.final_partitions:
-            new_attribute: Attribute
+            new_attribute: HierarchicalAttribute
             current_node = root.node(partition.attributes[attr_name].gen_value)
 
             # The hierarchy trees are not necessarily balanced. To avoid generalizing one path to the root, wait for all paths to get to the next level
@@ -117,7 +127,7 @@ class Datafly(AbstractAlgorithm):
                 new_attribute = partition.attributes[attr_name]
             else:
                 parent_node = current_node.ancestors[0]
-                new_attribute = Attribute(len(parent_node), parent_node.value)
+                new_attribute = HierarchicalAttribute(attr_name, len(parent_node), parent_node.value)
 
             self.merge_generalized_partitions(partition, attr_name, new_attribute, unique_values)
 
@@ -155,7 +165,7 @@ class Datafly(AbstractAlgorithm):
         for attr_name in Config.qid_names:
             if attr_name not in self.final_partitions[0].attributes.keys():
                 node_or_range = Config.attr_metadata[attr_name]                
-                not_generalized_attributes[attr_name] = Attribute(len(node_or_range), node_or_range.value)
+                not_generalized_attributes[attr_name] = self.create_attribute(attr_name, node_or_range)
 
         for partition in self.final_partitions:
             partition.attributes.update(not_generalized_attributes)        

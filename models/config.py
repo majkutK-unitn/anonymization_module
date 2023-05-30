@@ -22,6 +22,8 @@ class Config(object):
     
     categorical_attr_config: dict[str, dict | int | str]
     numerical_attr_config: dict[str, dict | int | str]
+    qids_config: dict[str, dict | int | str]
+
     gen_hiers: dict[str, GenTree]
     attr_metadata: dict[str, NumRange|GenTree]
 

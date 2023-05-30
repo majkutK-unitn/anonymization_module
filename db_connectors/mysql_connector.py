@@ -2,7 +2,10 @@ from os import getenv
 
 from typing import Tuple
 
+from functools import reduce
+
 import mysql.connector
+
 import tqdm
 
 from interfaces.datafly_api import DataflyAPI
@@ -10,7 +13,6 @@ from interfaces.mondrian_api import MondrianAPI
 
 from models.attribute import Attribute
 from models.config import Config
-from models.gentree import GenTree
 from models.numrange import NumRange
 from models.partition import Partition
 
@@ -36,25 +38,8 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
     def map_attributes_to_where_conditions(self, attributes: dict[str, Attribute]) -> str:
         if attributes is None:
             return ""
-        
-        queries_per_attribute: list[str] = []
 
-        for attr_name in attributes.keys():
-            node_or_range = Config.attr_metadata[attr_name]
-
-            if isinstance(node_or_range, GenTree):                
-                current_node = node_or_range.node(attributes[attr_name].gen_value)
-                leaf_values_as_str = ",".join([f"'{s}'" for s in current_node.get_leaf_node_values()])
-                queries_per_attribute.append(f"{attr_name} IN ({leaf_values_as_str})")
-            else:
-                range_min_and_max = attributes[attr_name].gen_value.split(',')
-                # If this is not a range ('20,30') any more, but a concrete number (20), simply return the number
-                if len(range_min_and_max) <= 1:
-                    queries_per_attribute.append(f"{attr_name} = {range_min_and_max[0]}")                    
-                else:
-                    queries_per_attribute.append(f"({attr_name} >= {range_min_and_max[0]} AND {attr_name} <= {range_min_and_max[1]})")
-
-        return f"WHERE {' AND '.join(queries_per_attribute)}"
+        return f"WHERE {' AND '.join([attr.map_to_sql_query() for attr in attributes.values()])}"
 
 
     def get_document_count(self, attributes: dict[str, Attribute] = None) -> int:                
@@ -169,26 +154,9 @@ class MySQLConnector(MondrianAPI, DataflyAPI):
 
         return num_ranges
     
-        
-    def map_numerical_attr_to_es_range(self, attr_name: str, attribute: Attribute):
-        min_max = attribute.gen_value.split(",")
-
-        return {
-            f"{attr_name}_from": min_max[0],
-            f"{attr_name}_to": min_max[1] if len(min_max) > 1 else min_max[0]
-        }
-    
 
     def map_partition_to_mysql_anon_record(self, partition: Partition) -> dict[str, dict|str]:
-        doc_with_qids = {}
-
-        for attr_name, attribute in partition.attributes.items():
-            if attr_name in Config.numerical_attr_config.keys():
-                doc_with_qids = doc_with_qids | self.map_numerical_attr_to_es_range(attr_name, attribute)
-            else:
-                doc_with_qids[attr_name] = attribute.gen_value
-
-        return doc_with_qids
+        return reduce(lambda acc, curr: acc | curr, [attr.map_to_sql_attribute() for attr in partition.attributes.values()])
     
 
     def generate_anonymized_docs(self, partitions: list[Partition]):        
