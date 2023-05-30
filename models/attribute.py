@@ -57,7 +57,7 @@ class Attribute(ABC):
 
 
 class HierarchicalAttribute(Attribute):        
-    def split(self) -> list[Attribute]:
+    def split(self) -> list[HierarchicalAttribute]:
         node_to_split_at: GenTree = Config.attr_metadata[self.get_name()].node(self.get_gen_value())
         
         return [
