@@ -6,9 +6,10 @@
 
 	- Elasticsearch
 		```
-		(set INDEX_NAME=adults)
+		(set ES_HOST=<<database_host>>)
 		(set API_KEY_BASE64=<<api_key>>)
-		(set ROOT_CA_PATH=<<path_to_root_ca>>)
+		(set ROOT_CA_PATH=<<path_to_root_ca>>)		
+		(set INDEX_NAME=adults)
 		```
 
 
