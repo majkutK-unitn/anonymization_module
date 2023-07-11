@@ -20,6 +20,7 @@ from interfaces.mondrian_api import MondrianAPI
 class EsConnector(MondrianAPI, DataflyAPI):
 
     def __init__(self):        
+        ES_HOST = getenv('ES_HOST')
         API_KEY_BASE64 = getenv('API_KEY_BASE64')
         ROOT_CA_PATH = getenv('ROOT_CA_PATH')
         
@@ -27,7 +28,7 @@ class EsConnector(MondrianAPI, DataflyAPI):
         self.ANON_INDEX_NAME = f"{self.INDEX_NAME}_anonymized"
 
         self.es_client = Elasticsearch(
-                hosts=["https://neteye2.test:9200"],
+                hosts=[ES_HOST],
                 api_key=API_KEY_BASE64, 
                 ca_certs=ROOT_CA_PATH
         )
