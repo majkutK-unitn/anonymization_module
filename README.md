@@ -142,7 +142,7 @@ The project currently contains configuration files for two datasets:
 
 	filter {
 		csv {                        
-			columns => ["age","workcalss","final_weight","education","education_num","marital_status","occupation","relationship","race","sex","capital_gain","capital_loss","hours_per_week","native_country","class"]
+			columns => ["age","workclass","final_weight","education","education_num","marital_status","occupation","relationship","race","sex","capital_gain","capital_loss","hours_per_week","native_country","class"]
 		}
 	}
 
